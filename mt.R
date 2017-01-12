@@ -1,11 +1,11 @@
 # mt
-# obj prefixes:
+# String prefixes:
 #   d_ dirty
 #   t_ tidy
 # ----------------------------------------------------------------------------
 mt <- list()
 # ----------------------------------------------------------------------------
-# reads meta information from webpages
+# Reads meta information from webpages
 #   @param {char} URI Vector of URIs to scan
 #   @param {bool} titl Get title text
 #   @param {bool} desc Get meta description text
@@ -18,7 +18,7 @@ mt$read <- function(URI=NULL, titl=T, desc=T, keyw=T) {
     rtn <- c(x)
     CON <- url(x)
     on.exit(close(CON))
-    d_src <- paste(try(readLines(CON)), collapse='')
+    d_src <- paste(try(readLines(CON, warn=F)), collapse='')
     if (titl) {
       if(grepl('<title>.*</title>', d_src)) {
         t_titl <- gsub('.*<title>|</title>.*', '', d_src)
