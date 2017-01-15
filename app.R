@@ -3,6 +3,7 @@ library(shinyjs)
 library(miniUI)
 source('C:/Users/Schwarz/Desktop/SO Banana/mt/mt.R')
 # TODO: progress bar for mt$read(), its slow..
+#       put correct colnames on return matrix
 mtInit <- function(inputValue1, inputValue2) {
   # --------------------------------------------------------------------------
   ui <- miniPage(
@@ -27,12 +28,12 @@ mtInit <- function(inputValue1, inputValue2) {
                          selected = c(1, 2, 3)
       ),
       miniButtonBlock(hidden(actionLink('submit', strong('Get info for given URLs!')))), br(),
-      hidden(div(id='pipe', em('R is busy, be patient...'))),
+      hidden(div(id='busy', em('R is busy, be patient...'))),
       hidden(div(id='data',
         p(strong('Return data')),
         actionLink('view', 'View'), br(),
         actionLink('save', 'Save .csv'),
-        hidden(span(id='savemsg', ' >> saved mt.csv in current working directory')), br(), br()
+        hidden(span(id='savemsg', ' >> saved in current working directory')), br(), br()
       ))
     )
   )
@@ -57,7 +58,7 @@ mtInit <- function(inputValue1, inputValue2) {
     # clear last btn
     observeEvent(input$clearlast, { store$uris <- store$uris[-length(store$uris)] })
     # done btn
-    observeEvent(input$done, { stopApp('done') })  # return value?
+    observeEvent(input$done, { stopApp({store$mrx}) })  # return value
     # reflects valid input uris
     output$mirror <- renderUI({  # let only store$uris update ui #mirror
       store$cnvt <- sapply(store$uris, function(x) { paste0(x, '<br/>') })
@@ -65,18 +66,20 @@ mtInit <- function(inputValue1, inputValue2) {
     })
     # submit btn and returning
     observeEvent(input$submit, {
-      show('pipe')
+      show('busy')
       store$params <- c('1' %in% input$checks, '2' %in% input$checks, '3' %in% input$checks)
       store$mrx <- mt$read(store$uris, store$params[1], store$params[2], store$params[3])
-      lapply(list('mirror', 'reset-blk', 'submit', 'pipe'), hide)
+      lapply(list('mirror', 'reset-blk', 'submit', 'busy'), hide)
       show('data')
       store$uris <- character()  # keeping things dry
+      mt.data <<- store$mrx
     })
     # view btn
     observeEvent(input$view, { View(store$mrx) })
     # save btn
     observeEvent(input$save, {
-      write.csv(store$mrx, 'mt.csv')
+      fn <- paste0('mt', as.integer(Sys.time()), '.csv')
+      write.csv(store$mrx, fn)
       show('savemsg')
     }) 
   }
