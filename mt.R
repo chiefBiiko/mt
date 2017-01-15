@@ -13,7 +13,7 @@ mt <- list()
 # ----------------------------------------------------------------------------
 mt$read <- function(URI=NULL, titl=T, desc=T, keyw=T) {
   if (missing(URI)) stop('no input URI!')
-  if (!all(titl, desc, keyw)) stop('no output set!')
+  if (!any(titl, desc, keyw)) stop('no output set!')
   return(t(sapply(URI, function(x) {
     rtn <- c(x)
     CON <- url(x)
