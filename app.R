@@ -1,10 +1,10 @@
 library(shiny)
 library(shinyjs)
 library(miniUI)
-source('C:/Users/Schwarz/Desktop/SO Banana/mt/mt.R')
+source('https://raw.githubusercontent.com/chiefBiiko/mt/master/mt.R')
 # TODO: progress bar for mt$read(), its slow..
 #       put correct colnames on return matrix
-mtInit <- function(inputValue1, inputValue2) {
+mtInit <- function(inputValue1, inputValue2) {  # not using these
   # --------------------------------------------------------------------------
   ui <- miniPage(
     useShinyjs(),
