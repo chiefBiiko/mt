@@ -1,4 +1,5 @@
 # mt
+# TODO: add xtra: og:description and schema application/ld+json
 # String prefixes:
 #   d_ dirty
 #   t_ tidy
@@ -14,7 +15,7 @@ mt <- list()
 mt$read <- function(URI=NULL, titl=T, desc=T, keyw=T) {
   if (missing(URI)) stop('no input URI!')
   if (!any(titl, desc, keyw)) stop('no output set!')
-  return(t(sapply(URI, function(x) {
+  meta <- matrix(sapply(URI, function(x) {
     rtn <- c(x)
     CON <- url(x)
     on.exit(close(CON))
@@ -46,5 +47,7 @@ mt$read <- function(URI=NULL, titl=T, desc=T, keyw=T) {
       }
     }
     return(rtn)
-  }, USE.NAMES=F)))
+  }, USE.NAMES=F), ncol=sum(c(titl, desc, keyw))+1, byrow=T)
+  colnames(meta) <- c('url', sapply(which(c(titl, desc, keyw), arr.ind=T), function(x) { c('title', 'description', 'keywords')[x] }))
+  return(meta)
 }
