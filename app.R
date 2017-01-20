@@ -1,9 +1,9 @@
 library(shiny)
 library(shinyjs)
 library(miniUI)
+require(jsonlite)
 source('https://raw.githubusercontent.com/chiefBiiko/mt/master/mt.R')
 # TODO: progress bar for mt$read(), its slow..
-#       put correct colnames on return matrix
 mtInit <- function(inputValue1, inputValue2) {  # not using these
   # --------------------------------------------------------------------------
   ui <- miniPage(
@@ -31,10 +31,15 @@ mtInit <- function(inputValue1, inputValue2) {  # not using these
       hidden(div(id='busy', em('R is busy, be patient...'))),
       hidden(div(id='data',
         p(strong('Return data')),
+        p('Once you click "Done" all return data will be bound in your global environment.'),
+        tags$ul(
+          tags$li('mt.data$meta : matrix'),
+          hidden(div(id='schmbull', tags$li('mt.data$schema : list')))
+        ),
         actionLink('view', 'View meta matrix'), br(),
-        actionLink('save', 'Save meta matrix as .csv'),
+        actionLink('save', 'Save meta matrix as CSV'),
         hidden(span(id='savemsg', ' >> saved mtmeta...csv in current working directory')), br(),
-        hidden(span(id='schm', actionLink('saveschm', 'Save schema as JSON'),
+        hidden(span(id='schm', actionLink('saveschm', 'Save schema list as JSON'),
         hidden(span(id='schmsg', ' >> saved mtschema...json in current working directory')), br())), br()
       ))
     )
@@ -49,7 +54,7 @@ mtInit <- function(inputValue1, inputValue2) {  # not using these
         hide('data')
         store$uris[length(store$uris)+1] <- trimws(input$line)
         updateTextInput(session, 'line', NULL, '')
-        lapply(list('mirror', 'reset-blk', 'submit'), show)
+        lapply(list('mirror', 'reset-blk', 'checks', 'submit'), show)
       }
     })
     # clear all btn
@@ -71,23 +76,24 @@ mtInit <- function(inputValue1, inputValue2) {  # not using these
       show('busy')
       store$params <- c('1' %in% input$checks, '2' %in% input$checks, '3' %in% input$checks, '4' %in% input$checks)
       store$data <- mt$read(store$uris, store$params[1], store$params[2], store$params[3], store$params[4])
-      lapply(list('mirror', 'reset-blk', 'submit', 'busy'), hide)
+      lapply(list('mirror', 'reset-blk', 'checks', 'submit', 'busy', 'schmbull', 'schm', 'savemsg', 'schmsg'), hide)
       show('data')
-      if (schema) show('schm')
-      store$uris <- character()  # keeping things dry
+      if (store$params[4]) lapply(list('schmbull', 'schm'), show)
+      store$uris <- store$cnvt <- store$params <- character()  # keeping things dry
       mt.data <<- store$data
     })
     # view btn
     observeEvent(input$view, { View(store$data$meta) })
     # save meta btn
     observeEvent(input$save, {
-      fn <- paste0('mtmatrix', as.integer(Sys.time()), '.csv')
-      write.csv(store$data$meta, fn)
+      fn <- paste0('mtmeta', as.integer(Sys.time()), '.csv')
+      write.csv(store$data$meta, fn, row.names=F)
       show('savemsg')
     })
     # save json btn
     observeEvent(input$saveschm, {
-      # save store$data$schema as json file
+      fn <- paste0('mtschema', as.integer(Sys.time()), '.json')
+      write(toJSON(store$data$schema), fn)
       show('schmsg')
     })
   }

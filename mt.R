@@ -1,5 +1,6 @@
 # mt
 # TODO: scrape more meta tags such as og:...
+#       collapse sequential regex procedures into a single operation! 
 # String prefixes:
 #   d_ dirty
 #   t_ tidy
