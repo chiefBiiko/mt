@@ -24,23 +24,25 @@ mtInit <- function(inputValue1, inputValue2) {  # not using these
         actionLink('clearlast', 'clear last'), br(), br()
       )),
       checkboxGroupInput('checks', 'Choose meta info to get', 
-                         choices = list("Title"=1, "Description"=2, "Keywords"=3),
+                         choices = list("Title"=1, "Description"=2, "Keywords"=3, "Schema"=4),
                          selected = c(1, 2, 3)
       ),
       miniButtonBlock(hidden(actionLink('submit', strong('Get info for given URLs!')))), br(),
       hidden(div(id='busy', em('R is busy, be patient...'))),
       hidden(div(id='data',
         p(strong('Return data')),
-        actionLink('view', 'View'), br(),
-        actionLink('save', 'Save .csv'),
-        hidden(span(id='savemsg', ' >> saved in current working directory')), br(), br()
+        actionLink('view', 'View meta matrix'), br(),
+        actionLink('save', 'Save meta matrix as .csv'),
+        hidden(span(id='savemsg', ' >> saved mtmeta...csv in current working directory')), br(),
+        hidden(span(id='schm', actionLink('saveschm', 'Save schema as JSON'),
+        hidden(span(id='schmsg', ' >> saved mtschema...json in current working directory')), br())), br()
       ))
     )
   )
   # --------------------------------------------------------------------------
   server <- function(input, output, session) {  # input$checks
     store <- reactiveValues(uris=character(), cnvt=character(),
-                            params=character(), mrx=matrix())
+                            params=character(), data=list())
     # event listener 4 js keydown, updating store$uris
     observeEvent(input$keyz, {
       if (input$keyz == 13 & grepl('^https?://[^\\.]+\\..{2,}', input$line)) {
@@ -58,7 +60,7 @@ mtInit <- function(inputValue1, inputValue2) {  # not using these
     # clear last btn
     observeEvent(input$clearlast, { store$uris <- store$uris[-length(store$uris)] })
     # done btn
-    observeEvent(input$done, { stopApp({store$mrx}) })  # return value
+    observeEvent(input$done, { stopApp({store$data}) })  # return value
     # reflects valid input uris
     output$mirror <- renderUI({  # let only store$uris update ui #mirror
       store$cnvt <- sapply(store$uris, function(x) { paste0(x, '<br/>') })
@@ -67,21 +69,27 @@ mtInit <- function(inputValue1, inputValue2) {  # not using these
     # submit btn and returning
     observeEvent(input$submit, {
       show('busy')
-      store$params <- c('1' %in% input$checks, '2' %in% input$checks, '3' %in% input$checks)
-      store$mrx <- mt$read(store$uris, store$params[1], store$params[2], store$params[3])
+      store$params <- c('1' %in% input$checks, '2' %in% input$checks, '3' %in% input$checks, '4' %in% input$checks)
+      store$data <- mt$read(store$uris, store$params[1], store$params[2], store$params[3], store$params[4])
       lapply(list('mirror', 'reset-blk', 'submit', 'busy'), hide)
       show('data')
+      if (schema) show('schm')
       store$uris <- character()  # keeping things dry
-      mt.data <<- store$mrx
+      mt.data <<- store$data
     })
     # view btn
-    observeEvent(input$view, { View(store$mrx) })
-    # save btn
+    observeEvent(input$view, { View(store$data$meta) })
+    # save meta btn
     observeEvent(input$save, {
-      fn <- paste0('mt', as.integer(Sys.time()), '.csv')
-      write.csv(store$mrx, fn)
+      fn <- paste0('mtmatrix', as.integer(Sys.time()), '.csv')
+      write.csv(store$data$meta, fn)
       show('savemsg')
-    }) 
+    })
+    # save json btn
+    observeEvent(input$saveschm, {
+      # save store$data$schema as json file
+      show('schmsg')
+    })
   }
   # --------------------------------------------------------------------------
   runGadget(ui, server, viewer=dialogViewer('mt - get meta info from webpages'))
