@@ -1,4 +1,7 @@
 # mt
+# TODO:
+#   rewrite as mtcurl.R with pooled requests:
+#   cran.r-project.org/web/packages/curl/vignettes/intro.html#async-requests
 # ----------------------------------------------------------------------------
 mt <- list()
 # ----------------------------------------------------------------------------
