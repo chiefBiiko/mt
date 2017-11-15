@@ -1,0 +1,25 @@
+{
+  "name": "drop",
+  "version": "0.0.1",
+  "description": "elementary-electron workshop",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "concat-stream": "^1.6.0",
+    "discovery-swarm": "^4.4.2",
+    "drag-drop": "^2.13.2",
+    "electron": "^1.7.9",
+    "hash-to-port": "^1.0.0",
+    "leveldown": "^2.0.1",
+    "levelup": "^2.0.1",
+    "scuttleup": "^3.3.0",
+    "stream-set": "^1.1.0"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.6.0"
+  }
+}
