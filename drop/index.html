@@ -2,10 +2,18 @@
 <html lang="en">
 <head>
   <style>
-    html { font: normal bold 16px 'sans-serif' }
-    #login { box-sizing: border-box; width: 100%; line-height: 25px; }
+    html { font: normal bold 16px 'arial' }
+    body {
+      
+    }
+    #login {
+      box-sizing: border-box;
+      line-height: 25px;
+      padding: 0 5px;
+      width: 100%;
+    }
     #dump {
-      background-color: #000;
+      background-color: gold;
       color: #fff;
       height: 100px;
       text-align: center;
@@ -14,11 +22,11 @@
       justify-content: center;
     }
     #dump:hover { cursor: pointer; }
+    .savebtn {
+      cursor: pointer;
+    }
   </style>
-  <script src="./index.js" defer></script>
+  <script src="./index.js"></script>
 </head>
-<body>
-  <input id="login" placeholder="enter your name...">
-  <div id="dump">drag and drop or<br>pick files here...</div>
-</body>
+<body></body>
 </html>
