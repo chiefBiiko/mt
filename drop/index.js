@@ -11,7 +11,7 @@ const scuttleup = require('scuttleup')
 const { Readable, Transform } = require('stream')
 
 /*
-  ./node_modules/scuttleup/index.js requires modification at line 99:100 to:
+  ./node_modules/scuttleup/index.js postinstall mod at line 99:100 to:
   peer: peer.toString('hex'),
   seq: seq || 0
 */
@@ -64,7 +64,7 @@ const openHandler = () => {
       fs.createReadStream(filepath).pipe(concat(buf => {
         logs.append(JSON.stringify({
           username: me,
-          filename: filepath.replace(/^.+\/|\\(.+)$/, '$1'),
+          filename: filepath.replace(/^.+(\/|\\)(.+)$/, '$2'),
           data: buf.toString('hex'),
           sha256: sha256(buf)
         }))
@@ -86,24 +86,29 @@ const dataHandler = data => {
   console.log('doc:\n', doc)
   const filebox = document.createElement('div')
   const savebtn = document.createElement('span')
-  const hidebtn = document.createElement('span')
+  const trashbtn = document.createElement('span')
   const saveHandler = () => {
     dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
       if (!aka) return
       makePlug(Buffer.from(doc.data, 'hex')).pipe(fs.createWriteStream(aka))
     })
   }
-  const hideHandler = e => view.removeChild(e.target.parentNode) // aka filebox
+  const trashHandler = e => {
+    logs.del(data.peer, data.seq, err => {
+      if (err) return console.error(err)
+      view.removeChild(e.target.parentNode) // aka filebox
+    })
+  }
   savebtn.onclick = saveHandler
   savebtn.innerText = 'save'
   savebtn.classList.add('savebtn')
-  hidebtn.onclick = hideHandler
-  hidebtn.innerText = 'hide'
-  hidebtn.classList.add('hidebtn')
+  trashbtn.onclick = trashHandler
+  trashbtn.innerText = 'trash'
+  trashbtn.classList.add('trashbtn')
   filebox.innerText = `${doc.username} is sharing ${doc.filename}`
   filebox.classList.add('filebox')
   filebox.appendChild(savebtn)
-  filebox.appendChild(hidebtn)
+  filebox.appendChild(trashbtn)
   view.appendChild(filebox)
 }
 
