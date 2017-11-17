@@ -8,7 +8,13 @@ const dialog = require('electron').remote.dialog
 const levelup = require('levelup')
 const memdown = require('memdown')
 const scuttleup = require('scuttleup')
-const Readable = require('stream').Readable
+const { Readable, Transform } = require('stream')
+
+/*
+  ./node_modules/scuttleup/index.js requires modification at line 99:100 to:
+  peer: peer.toString('hex'),
+  seq: seq || 0
+*/
 
 const swarm = discoverySwarm({ dht: false })
 
@@ -22,6 +28,7 @@ const makePlug = buf => {
   return r
 }
 
+var view
 var me
 var logs
 
@@ -30,9 +37,9 @@ const loginHandler = e => {
   login.disabled = true
   me = login.value
   logs = scuttleup(levelup(memdown(`./${me}.db`)))
-  logs.createReadStream({ live: true }).on('data', dataHandler)
-  document.body.appendChild(trap.getDump())
-  document.body.removeChild(trap.getLogin())
+  logs.createReadStream({ live: true, tail: false }).on('data', dataHandler)
+  view.appendChild(trap.getDump())
+  view.removeChild(trap.getLogin())
   swarm.listen(hashToPort(me))
   swarm.join('FRAUD', { announce: true })
 }
@@ -49,7 +56,9 @@ const dropHandler = files => {
 }
 
 const openHandler = () => {
-  dialog.showOpenDialog({ properties: [ 'openFile' ] }, filepaths => {
+  dialog.showOpenDialog({
+    properties: [ 'openFile', 'multiSelections', 'showHiddenFiles' ]
+  }, filepaths => {
     if (!filepaths || !filepaths.length) return
     filepaths.forEach(filepath => {
       fs.createReadStream(filepath).pipe(concat(buf => {
@@ -66,6 +75,7 @@ const openHandler = () => {
 
 const connectionHandler = (socket, peer) => {
   console.log(`[ new peer connection from ${peer.host}:${peer.port} ]`)
+  logs.createReadStream().on('data', data => console.log(JSON.stringify(data)))
   socket.pipe(
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
@@ -76,18 +86,25 @@ const dataHandler = data => {
   console.log('doc:\n', doc)
   const filebox = document.createElement('div')
   const savebtn = document.createElement('span')
+  const hidebtn = document.createElement('span')
   const saveHandler = () => {
     dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
+      if (!aka) return
       makePlug(Buffer.from(doc.data, 'hex')).pipe(fs.createWriteStream(aka))
     })
   }
+  const hideHandler = e => view.removeChild(e.target.parentNode) // aka filebox
   savebtn.onclick = saveHandler
   savebtn.innerText = 'save'
   savebtn.classList.add('savebtn')
+  hidebtn.onclick = hideHandler
+  hidebtn.innerText = 'hide'
+  hidebtn.classList.add('hidebtn')
   filebox.innerText = `${doc.username} is sharing ${doc.filename}`
   filebox.classList.add('filebox')
   filebox.appendChild(savebtn)
-  document.body.appendChild(filebox)
+  filebox.appendChild(hidebtn)
+  view.appendChild(filebox)
 }
 
 const trap = {
@@ -112,5 +129,11 @@ const trap = {
   }
 }
 
-window.onload = () => document.body.appendChild(trap.getLogin())
+const initView = () => {
+  view = document.createElement('div')
+  view.appendChild(trap.getLogin())
+  document.body.appendChild(view)
+}
+
 swarm.on('connection', connectionHandler)
+window.onload = initView
