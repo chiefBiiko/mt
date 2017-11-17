@@ -9,10 +9,11 @@ const levelup = require('levelup')
 const memdown = require('memdown')
 const scuttleup = require('scuttleup')
 
-const sha256 = buf => crypto.createHash('sha256').update(buf).digest()
-
 const login = document.querySelector('#login')
 const dump = document.querySelector('#dump')
+
+const sha256 = buf =>
+  crypto.createHash('sha256').update(buf).digest().toString('hex')
 
 const swarm = discoverySwarm({ dht: false })
 
@@ -23,7 +24,7 @@ const loginHandler = e => {
   if (e.keyCode !== 13 || !/[^\s]/i.test(login.value)) return
   login.disabled = true
   me = login.value
-  logs = scuttleup(levelup(memdown(`./${me}.db`)), { valueEncoding: 'json' })
+  logs = scuttleup(levelup(memdown(`./${me}.db`)), { valueEncoding: 'utf-8' })
   logs.createReadStream({ live: true }).on('data', dataHandler)
   swarm.listen(hashToPort(me))
   swarm.join('FRAUD', { announce: true })
@@ -37,7 +38,7 @@ const connectionHandler = (socket, peer) => {
 }
 
 const dataHandler = data => {
-  console.log('dataHandler data:', data)
+  console.log('data.entry:', data.entry)
   const filebox = document.createElement('div')
   const savebtn = document.createElement('span')
   savebtn.innerText = 'Save'
@@ -51,12 +52,12 @@ const dataHandler = data => {
 const dropHandler = files => {
   files.forEach(buf => {
     console.log(buf)
-    logs.append({
+    logs.append(JSON.stringify({
       username: me,
       filename: buf.name,
       data: buf.toString('hex'),
       sha256: sha256(buf)
-    })
+    }))
   })
 }
 
