@@ -7,21 +7,15 @@ const dragDrop = require('drag-drop/buffer')
 const dialog = require('electron').remote.dialog
 const levelup = require('levelup')
 const memdown = require('memdown')
-const scuttleup = require('scuttleup')
+const scuttleupBlacklist = require('scuttleup-blacklist')
 const { Readable, Transform } = require('stream')
-
-/*
-  ./node_modules/scuttleup/index.js postinstall mod at line 99:100 to:
-  peer: peer.toString('hex'),
-  seq: seq || 0
-*/
 
 const swarm = discoverySwarm({ dht: false })
 
 const sha256 = buf =>
   crypto.createHash('sha256').update(buf).digest().toString('hex')
 
-const makePlug = buf => {
+const makeReadable = buf => {
   const r = new Readable()
   r.push(buf)
   r.push(null)
@@ -30,18 +24,19 @@ const makePlug = buf => {
 
 var view
 var me
+var team
 var logs
 
 const loginHandler = e => {
-  if (e.keyCode !== 13 || !/[^\s]/i.test(login.value)) return
-  login.disabled = true
-  me = login.value
-  logs = scuttleup(levelup(memdown(`./${me}.db`)))
+  me = trap._login_n.value
+  team = trap._login_t.value
+  logs = scuttleupBlacklist(levelup(memdown(`./${me}.db`)))
   logs.createReadStream({ live: true, tail: false }).on('data', dataHandler)
-  view.appendChild(trap.getDump())
   view.removeChild(trap.getLogin())
+  view.appendChild(trap.getDump())
+  view.appendChild(trap.getCounter())
   swarm.listen(hashToPort(me))
-  swarm.join('FRAUD', { announce: true })
+  swarm.join(team, { announce: true })
 }
 
 const dropHandler = files => {
@@ -75,26 +70,33 @@ const openHandler = () => {
 
 const connectionHandler = (socket, peer) => {
   console.log(`[ new peer connection from ${peer.host}:${peer.port} ]`)
-  logs.createReadStream().on('data', data => console.log(JSON.stringify(data)))
+  trap.getCounter().update()
   socket.pipe(
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
 }
 
 const dataHandler = data => {
-  const doc = JSON.parse(data.entry.toString())
+  var doc
+  try {
+    doc = JSON.parse(data.entry.toString())
+  } catch (err) {
+    return console.error(err)
+  }
   console.log('doc:\n', doc)
   const filebox = document.createElement('div')
   const savebtn = document.createElement('span')
   const trashbtn = document.createElement('span')
   const saveHandler = () => {
-    dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
-      if (!aka) return
-      makePlug(Buffer.from(doc.data, 'hex')).pipe(fs.createWriteStream(aka))
+    dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, alias => {
+      if (!alias) return
+      makeReadable(
+        Buffer.from(doc.data, 'hex')
+      ).pipe(fs.createWriteStream(alias))
     })
   }
   const trashHandler = e => {
-    logs.del(data.peer, data.seq, err => {
+    logs.blacklist(data.peer, data.seq, err => {
       if (err) return console.error(err)
       view.removeChild(e.target.parentNode) // aka filebox
     })
@@ -113,15 +115,54 @@ const dataHandler = data => {
 }
 
 const trap = {
-  _login: null,
+  _counter: null,
   _dump: null,
+  _login: null,
+  _login_n: null,
+  _login_t: null,
+  _login_s: null,
+  _validator(e) {
+    const valid =
+      [ this._login_n, this._login_t ].every(ui => /[^\s]+/.test(ui.value))
+    this._login_s.disabled = !valid
+    this._login_s.style.cursor = valid ? 'pointer' : 'not-allowed'
+    this._login_s.style.color = valid ? 'gold' : '#999'
+    if (valid && e.keyCode === 13) loginHandler(e)
+  },
   getLogin() {
     if (this._login) return this._login
-    this._login = document.createElement('input')
+    this._login = document.createElement('div')
+    this._login_n = document.createElement('input')
+    this._login_t = document.createElement('input')
+    this._login_s = document.createElement('input')
     this._login.id = 'login'
-    this._login.placeholder = 'yo name'
-    this._login.onkeyup = loginHandler
+    this._login_n.classList.add('textinput')
+    this._login_t.classList.add('textinput')
+    this._login_s.classList.add('okbutton')
+    this._login_n.placeholder = 'yo name'
+    this._login_t.placeholder = 'da team'
+    this._login_s.value = 'join'
+    this._login_s.type = 'submit'
+    this._login_s.disabled = true
+    this._login_s.style.cursor = 'not-allowed'
+    this._login.onkeyup = this._validator.bind(this)
+    this._login_s.onclick = loginHandler
+    this._login.appendChild(this._login_n)
+    this._login.appendChild(this._login_t)
+    this._login.appendChild(this._login_s)
     return this._login
+  },
+  getCounter () {
+    if (this._counter) return this._counter
+    this._counter = document.createElement('span')
+    this._counter.id = 'counter'
+    this._counter.style.position = 'fixed'
+    this._counter.style.top = this._counter.style.right = '10px'
+    this._counter.update = () => {
+      this._counter.innerText =
+        `${swarm.connected} peer${swarm.connected !== 1 ? 's' : ''}`
+    }
+    return this._counter
   },
   getDump() {
     if (this._dump) return this._dump
@@ -138,6 +179,7 @@ const initView = () => {
   view = document.createElement('div')
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
+  document.onmouseenter = () => trap.getCounter().update()
 }
 
 swarm.on('connection', connectionHandler)

@@ -14,15 +14,12 @@ const makePlug = stryng => {
 }
 
 fs.createReadStream(SCUTTLEUP_INDEX).pipe(concat(buf => {
-  const fresh = buf.toString()
-    .split('\n')
-    .map((v, i) => {
-      if (i < 90 || i > 110) return v
-      if (/peer: peer/.test(v))
-        v = v.replace(': peer', ': peer.toString("hex")')
-      if (/seq: seq/.test(v))
-        v = v.replace(': seq', ': seq || 0')
-      return v
-    }).join('\n')
-  makePlug(fresh).pipe(fs.createWriteStream(SCUTTLEUP_INDEX))
+  makePlug(buf.toString().split('\n').map((line, i) => {
+      if (i < 90 || i > 110) return line
+      if (/peer: peer/.test(line))
+        line = line.replace(': peer', ': peer.toString("hex")')
+      if (/seq: seq/.test(line))
+        line = line.replace(': seq', ': seq || 0')
+      return line
+    }).join('\n')).pipe(fs.createWriteStream(SCUTTLEUP_INDEX))
 }))
