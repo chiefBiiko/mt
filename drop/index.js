@@ -3,7 +3,7 @@ const fs = require('fs')
 const concat = require('concat-stream')
 const hashToPort = require('hash-to-port')
 const discoverySwarm = require('discovery-swarm')
-const dragDrop = require('drag-drop/buffer')
+const dragDrop = require('drag-drop')
 const dialog = require('electron').remote.dialog
 const levelup = require('levelup')
 const memdown = require('memdown')
@@ -42,26 +42,38 @@ const loginHandler = e => {
 }
 
 const dropHandler = files => {
-  files.forEach(buf => {
-    logs.append(JSON.stringify({
-      username: me,
-      filename: buf.name,
-      data: buf.toString('hex'),
-      sha256: sha256(buf)
+  console.log('files', files)
+  files.forEach(file => {
+    // if dir read using tar-fs gunzip-maybe...
+    fs.createReadStream(file.path).pipe(concat(buf => {
+      logs.append(JSON.stringify({
+        username: me,
+        filename: file.name,
+        type: 'file|directory',
+        data: buf.toString('hex'),
+        sha256: sha256(buf)
+      }))
     }))
   })
 }
 
 const openHandler = () => {
   dialog.showOpenDialog({
-    properties: [ 'openFile', 'multiSelections', 'showHiddenFiles' ]
+    properties: [
+      'openFile',
+      //'openDirectory',
+      'multiSelections',
+      'showHiddenFiles'
+    ]
   }, filepaths => {
     if (!filepaths || !filepaths.length) return
     filepaths.forEach(filepath => {
+      // if dir read using tar-fs gunzip-maybe...
       fs.createReadStream(filepath).pipe(concat(buf => {
         logs.append(JSON.stringify({
           username: me,
           filename: filepath.replace(/^.+(\/|\\)(.+)$/, '$2'),
+          type: 'file|directory',
           data: buf.toString('hex'),
           sha256: sha256(buf)
         }))
@@ -86,12 +98,14 @@ const dataHandler = data => {
     return console.error(err)
   }
   console.log('doc:\n', doc)
+  trap.getProfiler().update()
   const filebox = document.createElement('div')
   const savebtn = document.createElement('span')
   const trashbtn = document.createElement('span')
   const saveHandler = () => {
     dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
       if (!aka) return
+      // if dir write using tar-fs gunzip-maybe...
       makeReadable(Buffer.from(doc.data, 'hex'))
         .pipe(fs.createWriteStream(aka))
     })
@@ -113,7 +127,6 @@ const dataHandler = data => {
   filebox.appendChild(savebtn)
   filebox.appendChild(trashbtn)
   view.appendChild(filebox)
-  trap.getProfiler().update()
 }
 
 const trap = {
