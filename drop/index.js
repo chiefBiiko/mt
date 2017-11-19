@@ -8,7 +8,8 @@ const dialog = require('electron').remote.dialog
 const levelup = require('levelup')
 const memdown = require('memdown')
 const scuttleupBlacklist = require('scuttleup-blacklist')
-const { Readable, Transform } = require('stream')
+const Readable = require('stream').Readable
+const prettyHeap = require('./pretty-heap')
 
 const swarm = discoverySwarm({ dht: false })
 
@@ -28,13 +29,14 @@ var team
 var logs
 
 const loginHandler = e => {
-  me = trap._login_n.value
-  team = trap._login_t.value
+  me = trap._name.value
+  team = trap._team.value
   logs = scuttleupBlacklist(levelup(memdown(`./${me}.db`)))
   logs.createReadStream({ live: true, tail: false }).on('data', dataHandler)
   view.removeChild(trap.getLogin())
   view.appendChild(trap.getDump())
   view.appendChild(trap.getCounter())
+  view.appendChild(trap.getProfiler())
   swarm.listen(hashToPort(me))
   swarm.join(team, { announce: true })
 }
@@ -88,11 +90,10 @@ const dataHandler = data => {
   const savebtn = document.createElement('span')
   const trashbtn = document.createElement('span')
   const saveHandler = () => {
-    dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, alias => {
-      if (!alias) return
-      makeReadable(
-        Buffer.from(doc.data, 'hex')
-      ).pipe(fs.createWriteStream(alias))
+    dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
+      if (!aka) return
+      makeReadable(Buffer.from(doc.data, 'hex'))
+        .pipe(fs.createWriteStream(aka))
     })
   }
   const trashHandler = e => {
@@ -112,44 +113,45 @@ const dataHandler = data => {
   filebox.appendChild(savebtn)
   filebox.appendChild(trashbtn)
   view.appendChild(filebox)
+  trap.getProfiler().update()
 }
 
 const trap = {
   _counter: null,
   _dump: null,
   _login: null,
-  _login_n: null,
-  _login_t: null,
-  _login_s: null,
+  _name: null,
+  _team: null,
+  _join: null,
   _validator(e) {
     const valid =
-      [ this._login_n, this._login_t ].every(ui => /[^\s]+/.test(ui.value))
-    this._login_s.disabled = !valid
-    this._login_s.style.cursor = valid ? 'pointer' : 'not-allowed'
-    this._login_s.style.color = valid ? 'gold' : '#999'
+      [ this._name, this._team ].every(ui => /[^\s]+/.test(ui.value))
+    this._join.disabled = !valid
+    this._join.style.cursor = valid ? 'pointer' : 'not-allowed'
+    this._join.style.color = valid ? 'gold' : '#999'
     if (valid && e.keyCode === 13) loginHandler(e)
   },
   getLogin() {
     if (this._login) return this._login
     this._login = document.createElement('div')
-    this._login_n = document.createElement('input')
-    this._login_t = document.createElement('input')
-    this._login_s = document.createElement('input')
+    this._name = document.createElement('input')
+    this._team = document.createElement('input')
+    this._join = document.createElement('input')
     this._login.id = 'login'
-    this._login_n.classList.add('textinput')
-    this._login_t.classList.add('textinput')
-    this._login_s.classList.add('okbutton')
-    this._login_n.placeholder = 'yo name'
-    this._login_t.placeholder = 'da team'
-    this._login_s.value = 'join'
-    this._login_s.type = 'submit'
-    this._login_s.disabled = true
-    this._login_s.style.cursor = 'not-allowed'
+    this._name.classList.add('textinput')
+    this._team.classList.add('textinput')
+    this._join.classList.add('okbutton')
+    this._name.placeholder = 'yo name'
+    this._team.placeholder = 'da team'
+    this._join.value = 'join'
+    this._join.type = 'submit'
+    this._join.disabled = true
+    this._join.style.cursor = 'not-allowed'
     this._login.onkeyup = this._validator.bind(this)
-    this._login_s.onclick = loginHandler
-    this._login.appendChild(this._login_n)
-    this._login.appendChild(this._login_t)
-    this._login.appendChild(this._login_s)
+    this._join.onclick = loginHandler
+    this._login.appendChild(this._name)
+    this._login.appendChild(this._team)
+    this._login.appendChild(this._join)
     return this._login
   },
   getCounter () {
@@ -158,11 +160,26 @@ const trap = {
     this._counter.id = 'counter'
     this._counter.style.position = 'fixed'
     this._counter.style.top = this._counter.style.right = '10px'
+    this._counter.innerText = '0 peers'
     this._counter.update = () => {
       this._counter.innerText =
         `${swarm.connected} peer${swarm.connected !== 1 ? 's' : ''}`
     }
     return this._counter
+  },
+  getProfiler() {
+    if (this._profiler) return this._profiler
+    this._profiler = document.createElement('span')
+    this._profiler.id = 'profiler'
+    this._profiler.style.position = 'fixed'
+    this._profiler.style.top = this._profiler.style.left = '10px'
+    this._profiler.innerText = 'mem use\n0MB ~ 0%'
+    this._profiler.update = () => {
+      const mem = prettyHeap(process.memoryUsage())
+      this._profiler.innerText =
+        `mem use:\n${mem.heapUsedMB}MB ~ ${mem.heapUsedPercent * 100}%`
+    }
+    return this._profiler
   },
   getDump() {
     if (this._dump) return this._dump
@@ -175,11 +192,16 @@ const trap = {
   }
 }
 
+const updateControls = () => {
+  trap.getCounter().update()
+  trap.getProfiler().update()
+}
+
 const initView = () => {
   view = document.createElement('div')
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
-  document.onmouseenter = () => trap.getCounter().update()
+  document.onmouseenter = updateControls
 }
 
 swarm.on('connection', connectionHandler)
