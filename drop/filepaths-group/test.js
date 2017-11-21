@@ -1,10 +1,39 @@
+const fs = require('fs')
+const path = require('path')
 const tape = require('tape')
 const group = require('./index')
 
-tape('filepaths-group', t => {
-  const filepaths = []
-  const grouped = group(filepaths)
+fs.mkdirSync(path.join(__dirname, 'fraud'))
+fs.mkdirSync(path.join(__dirname, 'fraud', 'z'))
 
-  t.same(false, true)
-  t.end()
+const filepaths = [
+  path.join(__dirname, 'noop0.txt'),
+  path.join(__dirname, 'fraud', 'noop1.txt'),
+  path.join(__dirname, 'fraud', 'noop2.txt'),
+  path.join(__dirname, 'fraud', 'z', 'z.txt')
+]
+
+filepaths.forEach(filepath => fs.writeFileSync(filepath, '419'))
+
+tape.onFinish(() => {
+  filepaths.forEach((filepath, i , arr) => {
+    fs.unlinkSync(filepath)
+    if (i === arr.length - 1) {
+      fs.rmdirSync(path.join(__dirname, 'fraud', 'z'))
+      fs.rmdirSync(path.join(__dirname, 'fraud'))
+    }
+  })
+})
+
+tape('filepaths-group', t => {
+
+  group(filepaths, (err, data) => {
+    if (err) t.end(err)
+
+    t.is(data.entireDirectories.length, 1, 'should have detected 1 entire dir')
+    t.is(data.singleFiles.length, 1, 'should have detected 1 single files')
+
+    t.end()
+  })
+
 })

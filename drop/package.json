@@ -16,11 +16,13 @@
     "discovery-swarm": "^4.4.2",
     "drag-drop": "^2.13.2",
     "electron": "^1.8.1",
+    "gunzip-maybe": "^1.4.1",
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
     "pretty-heap-used": "0.0.0",
-    "scuttleup-blacklist": "^3.4.0"
+    "scuttleup-blacklist": "^3.4.0",
+    "tar-fs": "^1.16.0"
   },
   "devDependencies": {
     "standard": "^10.0.3"

@@ -9,10 +9,15 @@ const levelup = require('levelup')
 const memdown = require('memdown')
 const scuttleupBlacklist = require('scuttleup-blacklist')
 const Readable = require('stream').Readable
+const tar = require('tar-fs')
+const gunzip = require('gunzip-maybe')
+const zlib = require('zlib')
+const filegroup = require('./filepaths-group/index')
 const prettyHeap = require('pretty-heap-used')
-const be = require('be-of-type')
-const is = {/*...*/}
+// const be = require('be-of-type')
+// const is = {/*...*/}
 
+const gzip = zlib.createGzip()
 const sha256 = buf =>
   crypto.createHash('sha256').update(buf).digest().toString('hex')
 
@@ -44,19 +49,39 @@ const loginHandler = e => {
 }
 
 const dropHandler = files => {
+
   console.log('files', files)
-  files.forEach(file => {
-    // if dir read using tar-fs gunzip-maybe...
-    fs.createReadStream(file.path).pipe(concat(buf => {
-      logs.append(JSON.stringify({
-        username: me,
-        filename: file.name,
-        type: 'file|directory',
-        data: buf.toString('hex'),
-        sha256: sha256(buf)
+
+  // distinguishing files and dirs
+  filegroup(files.map(file => file.path), (err, data) => {
+    if (err) return console.error(err)
+
+    data.singleFiles.forEach(filepath => {
+      fs.createReadStream(filepath).pipe(concat(buf => {
+        logs.append(JSON.stringify({
+          username: me,
+          filename: filepath.replace(/^.+(\/|\\)(.+)$/, '$2'),
+          type: 'file',
+          data: buf.toString('hex'),
+          sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
+        }))
       }))
-    }))
+    })
+
+    data.entireDirectories.forEach(dirpath => {
+      tar.pack(dirpath).pipe(gzip).pipe(concat(buf => {
+        logs.append(JSON.stringify({
+          username: me,
+          filename: dirpath.replace(/^.+(\/|\\)(.+)$/, '$2'),
+          type: 'directory',
+          data: buf.toString('hex'),
+          sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
+        }))
+      }))
+    })
+
   })
+
   trap.updateMetrics()
 }
 
@@ -136,13 +161,25 @@ const trap = { // all-in-1 factory that cooks up dom elements
     const savebtn = document.createElement('span')
     const trashbtn = document.createElement('span')
     const saveHandler = () => {
+
+      console.log('doc', doc)
       dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
         if (!aka) return
-        // if dir write using tar-fs gunzip-maybe...
-        makeReadable(
-          Buffer.from(doc.data, 'hex')
-        ).pipe(fs.createWriteStream(aka))
+        var alias
+        var writeStream
+        if (doc.type === 'directory') {
+          alias = `${aka}.tar.gz`
+          writeStream = fs.createWriteStream(alias)
+          writeStream.on('finish', () => {
+            fs.createReadStream(alias).pipe(gunzip()).pipe(tar.extract(aka))
+          })
+        } else {
+          writeStream = fs.createWriteStream(aka)
+        }
+        console.log('saving out!!!')
+        makeReadable(Buffer.from(doc.data, 'hex')).pipe(writeStream)
       })
+
     }
     const trashHandler = e => {
       logs.blacklist(peer, seq, err => {
