@@ -1,0 +1,31 @@
+{
+  "name": "filepaths-group",
+  "version": "0.0.0",
+  "description": "group filepath arrays",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chiefbiiko/filepaths-group.git"
+  },
+  "keywords": [
+    "filepaths",
+    "directories",
+    "group"
+  ],
+  "author": "Noah Anabiik Schwarz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chiefbiiko/filepaths-group/issues"
+  },
+  "homepage": "https://github.com/chiefbiiko/filepaths-group",
+  "dependencies": {
+    "count-files": "^2.6.2",
+    "pojo-ops": "^0.4.0"
+  },
+  "devDependencies": {
+    "tape": "^4.8.0"
+  }
+}

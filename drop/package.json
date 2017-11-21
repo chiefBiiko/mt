@@ -19,7 +19,7 @@
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
-    "pojo-ops": "^0.3.0",
+    "pretty-heap-used": "0.0.0",
     "scuttleup-blacklist": "^3.4.0"
   },
   "devDependencies": {
