@@ -4,8 +4,25 @@ const path = require('path')
 const countFiles = require('count-files')
 const ops = require('pojo-ops')
 
-const listDirs = p =>
-  fs.readdirSync(p).map(f => path.join(p, f)).filter(f => fs.statSync(f).isDirectory())
+function listDirs (dirpath) {
+  return fs.readdirSync(dirpath)
+    .map(entry => path.join(dirpath, entry))
+    .filter(filepath => fs.statSync(filepath).isDirectory())
+}
+
+//
+function gotAllNestedFiles(dir, map, cb) {
+  countFiles(dir, (err, count) => {
+    if (err) return cb(err, null)
+    if (!map[dir] || (count.files - count.dirs !== map[dir].length)) {
+      cb(null, false)
+    } else if (!count.dirs) {
+      cb(null, true)
+    } else if (count.dirs) {
+      listDirs(dir).forEach(d => gotAllNestedFiles(d, map, cb))
+    }
+  })
+}
 
 module.exports = function group (filepaths, callback) {
   const trap = {
@@ -34,27 +51,14 @@ module.exports = function group (filepaths, callback) {
   var size = ops.size(trap._map)
   ops.forEach(trap._map, (files, dir) => {
     gotAllNestedFiles(dir, trap._map, (err, truth) => {
-      console.log(dir, truth)
+      // console.log(dir, truth)
       if (err) return callback(err, null)
       if (truth) trap._temp.push(dir)
-      if (--size === 0) finish()
+      if (--size === 0) finishUp()
     })
   })
-  //
-  function gotAllNestedFiles(dir, map, cb) {
-    countFiles(dir, (err, count) => {
-      if (err) return cb(err, null)
-      if (!map[dir] || (count.files - count.dirs !== map[dir].length)) {
-        cb(null, false)
-      } else if (!count.dirs) {
-        cb(null, true)
-      } else if (count.dirs) {
-        listDirs(dir).forEach(d => gotAllNestedFiles(d, map, cb))
-      }
-    })
-  }
-  // finish up
-  function finish () {
+  // finish
+  function finishUp () {
     // push filepaths that are not covered by trap._temp to trap.singleFiles
     trap.singleFiles.push(...trap._files.filter(file => {
       return !trap._temp.some(dir => dir === file.dir) //
@@ -63,7 +67,9 @@ module.exports = function group (filepaths, callback) {
     trap.entireDirectories.push(...trap._temp.filter((dir, i, arr) => {
       return !arr.filter(d => d !== dir).some(other => dir.startsWith(other))
     }))
-    console.log(trap)
+    // console.log(trap)
+    if (trap.entireDirectories.length === 1 && trap._files.length === 1)
+      trap.singleFiles = [ trap._files[0].path ]
     callback(null, trap)
   }
 }
