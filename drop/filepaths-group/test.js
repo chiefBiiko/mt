@@ -25,13 +25,26 @@ tape.onFinish(() => {
   })
 })
 
-tape('filepaths-group', t => {
+tape('filepaths-group multiple filepaths', t => {
 
   group(filepaths, (err, data) => {
     if (err) t.end(err)
 
     t.is(data.entireDirectories.length, 1, 'should have detected 1 entire dir')
     t.is(data.singleFiles.length, 1, 'should have detected 1 single files')
+
+    t.end()
+  })
+
+})
+
+tape('filepaths-group one filepath', t => {
+
+  group(filepaths.slice(filepaths.length - 1), (err, data) => {
+    if (err) t.end(err)
+
+    t.is(data.entireDirectories.length, 0, 'should not indicate any dir')
+    t.is(data.singleFiles.length, 1, 'should detect 1 single file')
 
     t.end()
   })
