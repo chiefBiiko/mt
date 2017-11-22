@@ -17,7 +17,6 @@ const prettyHeap = require('pretty-heap-used')
 // const be = require('be-of-type')
 // const is = {/*...*/}
 
-const gzip = zlib.createGzip()
 const sha256 = buf =>
   crypto.createHash('sha256').update(buf).digest().toString('hex')
 
@@ -69,7 +68,7 @@ const dropHandler = files => {
     })
 
     data.entireDirectories.forEach(dirpath => {
-      tar.pack(dirpath).pipe(gzip).pipe(concat(buf => {
+      tar.pack(dirpath).pipe(zlib.createGzip()).pipe(concat(buf => {
         logs.append(JSON.stringify({
           username: me,
           filename: dirpath.replace(/^.+(\/|\\)(.+)$/, '$2'),
