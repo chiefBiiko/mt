@@ -54,33 +54,22 @@ const dropHandler = files => {
   // distinguishing files and dirs
   filegroup(files.map(file => file.path), (err, data) => {
     if (err) return console.error(err)
-
-    data.singleFiles.forEach(filepath => {
-      fs.createReadStream(filepath).pipe(concat(buf => {
-        logs.append(JSON.stringify({
-          username: me,
-          filename: filepath.replace(/^.+(\/|\\)(.+)$/, '$2'),
-          type: 'file',
-          data: buf.toString('hex'),
-          sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
-        }))
-      }))
-    })
-
-    data.entireDirectories.forEach(dirpath => {
-      tar.pack(dirpath).pipe(zlib.createGzip()).pipe(concat(buf => {
-        logs.append(JSON.stringify({
-          username: me,
-          filename: dirpath.replace(/^.+(\/|\\)(.+)$/, '$2'),
-          type: 'directory',
-          data: buf.toString('hex'),
-          sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
-        }))
-      }))
-    })
-
+    data.singleFiles.map(file => [ 'file', file ])
+      .concat(data.entireDirectories.map(dir => [ 'directory', dir ]))
+      .forEach(item => {
+        (item[0] === 'file' ? fs.createReadStream(item[1]) : tar.pack(item[1]))
+          .pipe(zlib.createGzip())
+          .pipe(concat(buf => {
+            logs.append(JSON.stringify({
+              username: me,
+              filename: item[1].replace(/^.+(\/|\\)(.+)$/, '$2'),
+              type: item[0],
+              data: buf.toString('hex'),
+              sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
+            }))
+          }))
+       })
   })
-
   trap.updateMetrics()
 }
 
@@ -151,7 +140,7 @@ const trap = { // all-in-1 factory that cooks up dom elements
     if (this._dump) return this._dump
     this._dump = document.createElement('div')
     this._dump.id = 'dump'
-    this._dump.innerText = 'drag and drop or\npick files here...'
+    this._dump.innerText = 'drag and drop\nfiles and directories'
     dragDrop(this._dump, dropHandler)
     return this._dump
   },
@@ -162,21 +151,30 @@ const trap = { // all-in-1 factory that cooks up dom elements
     const saveHandler = () => {
 
       console.log('doc', doc)
+
       dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
         if (!aka) return
         var alias
         var writeStream
         if (doc.type === 'directory') {
-          alias = `${aka}.tar.gz`
+          alias = `${aka}.tar`
           writeStream = fs.createWriteStream(alias)
           writeStream.on('finish', () => {
-            fs.createReadStream(alias).pipe(gunzip()).pipe(tar.extract(aka))
+            const readTar = fs.createReadStream(alias)
+            readTar.on('end', () => {
+              fs.unlink(alias, err => {
+                if (err) console.error(err)
+              })
+            })
+            readTar.pipe(tar.extract(aka))
           })
         } else {
           writeStream = fs.createWriteStream(aka)
         }
         console.log('saving out!!!')
-        makeReadable(Buffer.from(doc.data, 'hex')).pipe(writeStream)
+        makeReadable(Buffer.from(doc.data, 'hex'))
+          .pipe(gunzip())
+          .pipe(writeStream)
       })
 
     }
@@ -192,7 +190,8 @@ const trap = { // all-in-1 factory that cooks up dom elements
     trashbtn.onclick = trashHandler
     trashbtn.innerText = 'trash'
     trashbtn.classList.add('trashbtn')
-    filebox.innerText = `${doc.username} is sharing ${doc.filename}`
+    filebox.innerText =
+      `${doc.username} is sharing ${doc.type} ${doc.filename}`
     filebox.classList.add('filebox')
     filebox.appendChild(savebtn)
     filebox.appendChild(trashbtn)
@@ -221,7 +220,8 @@ const trap = { // all-in-1 factory that cooks up dom elements
     this._profiler.update = () => {
       const mem = prettyHeap(process.memoryUsage())
       this._profiler.innerText =
-        `mem use:\n${mem.heapUsedMB}MB ~ ${mem.heapUsedPercent * 100}%`
+        `mem use:\n${mem.heapUsedMB}MB ~ ` +
+          `${Math.round(mem.heapUsedPercent * 100)}%`
     }
     return this._profiler
   },
@@ -235,7 +235,7 @@ const initView = () => {
   view = document.createElement('div')
   view.appendChild(trap.getLoginForm())
   document.body.appendChild(view)
-  document.onmouseenter = trap.updateMetrics.bind(trap)
+  document.onmouseenter = document.onmouseleave = trap.updateMetrics.bind(trap)
 }
 
 swarm.on('connection', connectionHandler)
