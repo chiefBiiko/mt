@@ -1,0 +1,27 @@
+{
+  "name": "count-top-entries",
+  "version": "0.0.0",
+  "description": "count top-level directories and files in a directory",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chiefbiiko/count-top-entries.git"
+  },
+  "keywords": [
+    "count",
+    "directories",
+    "files"
+  ],
+  "author": "Noah Anabiik Schwarz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chiefbiiko/count-top-entries/issues"
+  },
+  "homepage": "https://github.com/chiefbiiko/count-top-entries#readme",
+  "devDependencies": {
+    "tape": "^4.8.0"
+  }
+}

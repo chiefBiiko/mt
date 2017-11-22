@@ -10,7 +10,6 @@ const memdown = require('memdown')
 const scuttleupBlacklist = require('scuttleup-blacklist')
 const Readable = require('stream').Readable
 const tar = require('tar-fs')
-const gunzip = require('gunzip-maybe')
 const zlib = require('zlib')
 const filegroup = require('./filepaths-group/index')
 const prettyHeap = require('pretty-heap-used')
@@ -54,6 +53,9 @@ const dropHandler = files => {
   // distinguishing files and dirs
   filegroup(files.map(file => file.path), (err, data) => {
     if (err) return console.error(err)
+
+    console.log(data)
+
     data.singleFiles.map(file => [ 'file', file ])
       .concat(data.entireDirectories.map(dir => [ 'directory', dir ]))
       .forEach(item => {
@@ -173,7 +175,7 @@ const trap = { // all-in-1 factory that cooks up dom elements
         }
         console.log('saving out!!!')
         makeReadable(Buffer.from(doc.data, 'hex'))
-          .pipe(gunzip())
+          .pipe(zlib.createGunzip())
           .pipe(writeStream)
       })
 

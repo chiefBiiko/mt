@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const countFiles = require('count-files')
+const countEntries = require('./count-top-entries/index')
 const ops = require('pojo-ops')
 
 function listDirs (dirpath) {
@@ -11,19 +11,15 @@ function listDirs (dirpath) {
 }
 
 function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
-  countFiles(dir, (err, count) => {
+  countEntries(dir, (err, count) => {
     if (err) return cb(err, null)
-    if (!map[dir] || (count.files - count.dirs !== map[dir].length)) {
-      cb(null, false)
-    } else if (!count.dirs) {
-      cb(null, true)
-    } else if (count.dirs) {
-      listDirs(dir).forEach(d => gotAllNestedFiles(d, map, cb))
-    }
+    if (!map[dir] || (count.files !== map[dir].length)) cb(null, false)
+    else if (!count.dirs) cb(null, true)
+    else listDirs(dir).forEach(d => gotAllNestedFiles(d, map, cb))
   })
 }
 
-module.exports = function group (filepaths, callback) {
+function group (filepaths, callback) {
   const trap = {
     entireDirectories: [],
     singleFiles: [],
@@ -52,12 +48,12 @@ module.exports = function group (filepaths, callback) {
     return acc
   }, {})
   // push keys of props that represent an entire dir to trap.entir... via temp
-  var size = ops.size(trap._map)
+  var pending = ops.size(trap._map)
   ops.forEach(trap._map, (files, dir) => {
     gotAllNestedFiles(dir, trap._map, (err, truth) => {
       if (err) return callback(err, null)
       if (truth) trap._temp.push(dir)
-      if (--size === 0) finishUp()
+      if (--pending === 0) finishUp()
     })
   })
   // finish
@@ -73,3 +69,5 @@ module.exports = function group (filepaths, callback) {
     callback(null, trap)
   }
 }
+
+module.exports = group

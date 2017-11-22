@@ -23,7 +23,6 @@
   },
   "homepage": "https://github.com/chiefbiiko/filepaths-group",
   "dependencies": {
-    "count-files": "^2.6.2",
     "pojo-ops": "^0.4.0"
   },
   "devDependencies": {

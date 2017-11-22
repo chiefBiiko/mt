@@ -1,0 +1,26 @@
+{
+  "name": "wishlist-dirs",
+  "version": "0.0.0",
+  "description": "list top-level directories in a directory",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chiefbiiko/wishlist-dirs.git"
+  },
+  "keywords": [
+    "list",
+    "directories"
+  ],
+  "author": "Noah Anabiik Schwarz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chiefbiiko/wishlist-dirs/issues"
+  },
+  "homepage": "https://github.com/chiefbiiko/wishlist-dirs#readme",
+  "devDependencies": {
+    "tape": "^4.8.0"
+  }
+}
