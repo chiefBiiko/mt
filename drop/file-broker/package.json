@@ -1,0 +1,25 @@
+{
+  "name": "file-broker",
+  "version": "0.0.0",
+  "description": "tcp server for simple file sharing",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chiefbiiko/file-broker.git"
+  },
+  "keywords": [
+    "filesharing"
+  ],
+  "author": "Noah Anabiik Schwarz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chiefbiiko/file-broker/issues"
+  },
+  "homepage": "https://github.com/chiefbiiko/file-broker#readme",
+  "devDependencies": {
+    "tape": "^4.8.0"
+  }
+}

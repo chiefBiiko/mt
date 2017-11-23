@@ -1,6 +1,5 @@
 const crypto = require('crypto')
 const fs = require('fs')
-const net = require('net')
 const concat = require('concat-stream')
 const hashToPort = require('hash-to-port')
 const discoverySwarm = require('discovery-swarm')
@@ -27,11 +26,7 @@ const makeReadable = buf => {
   return stream
 }
 
-
-
 const swarm = discoverySwarm({ dht: false })
-
-// const broker = net.createServer()
 
 var view
 var me
