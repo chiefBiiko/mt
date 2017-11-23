@@ -13,13 +13,11 @@ function count (dir, opts, callback) {
     var pending = entries.length
     var files = 0
     var dirs = 0
-    entries.map(function (entry) {
-      return path.join('.', dir, entry) // is __dirname always available?
-    }).forEach(function (fullpath) {
-      stat(fullpath, opts, function (err, stats) {
+    entries.forEach(function (entry) {
+      stat(path.join(dir, entry), opts, function (err, stats) {
         if (err) return callback(err)
         stats.isDirectory() ? dirs++ : files++
-        if (!--pending) callback(null, { files: files, dirs: dirs })
+        if (!--pending) return callback(null, { files: files, dirs: dirs })
       })
     })
   })

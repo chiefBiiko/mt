@@ -1,10 +1,10 @@
 var path = require('path')
 var tape = require('tape')
-var wishlist = require('./index')
+var wishlistDirs = require('./index')
 
-tape('names only', function(t) {
+tape('names only', function (t) {
 
-  wishlist('.', function(err, data) {
+  wishlistDirs('.', function (err, data) {
     if (err) t.end(err)
 
     t.is(data.length, 1, 'should have detected 1 dir')
@@ -15,14 +15,15 @@ tape('names only', function(t) {
 
 })
 
-tape('fullpaths', function(t) {
+tape('fullpaths', function (t) {
 
   var fullpath = path.join(__dirname, 'node_modules')
 
-  wishlist('.', { full: true }, function(err, data) {
+  wishlistDirs('.', { full: true }, function (err, data) {
     if (err) t.end(err)
 
     t.is(data.length, 1, 'should have detected 1 dir')
+    console.log(data[0], fullpath)
     t.is(data[0], fullpath, 'should have detected ./node_modules')
 
     t.end()
