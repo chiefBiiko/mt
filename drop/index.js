@@ -14,6 +14,7 @@ const tar = require('tar-fs')
 const zlib = require('zlib')
 const filegroup = require('./filepaths-group/index')
 const prettyHeap = require('pretty-heap-used')
+const fileBroker = require('./file-broker/index')
 // const be = require('be-of-type')
 // const is = {/*...*/}
 
@@ -27,23 +28,23 @@ const makeReadable = buf => {
   return stream
 }
 
-
-
 const swarm = discoverySwarm({ dht: false })
-
-// const broker = net.createServer()
+const broker = fileBroker()
 
 var view
 var me
 var team
 var logs
+var brokerport
 
 const loginHandler = e => {
   me = trap.getLoginNameInput().value
   team = trap.getLoginTeamInput().value
   logs = scuttleupBlacklist(levelup(memdown(`./${me}.db`)))
+  brokerport = hashToPort(me) - 1
   logs.createReadStream({ live: true }).on('data', dataHandler)
   swarm.listen(hashToPort(me))
+  broker.listen(brokerport/*, '0.0.0.0'*/)
   swarm.join(team, { announce: true })
   view.removeChild(trap.getLoginForm())
   view.appendChild(trap.getDump())
@@ -71,6 +72,9 @@ const dropHandler = files => {
               username: me,
               filename: item[1].replace(/^.+(\/|\\)(.+)$/, '$2'),
               type: item[0],
+              filepath: item[1],
+              host: swarm.address().address,
+              port: brokerport,
               data: buf.toString('hex'),
               sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
             }))
@@ -95,6 +99,9 @@ const dataHandler = data => {
   } catch (err) {
     return console.error(err)
   }
+
+  console.log(doc)
+
   view.appendChild(trap.makeFilebox(data.peer, data.seq, doc))
   trap.updateMetrics()
 }
@@ -161,15 +168,14 @@ const trap = { // all-in-1 factory that cooks up dom elements
 
       dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
         if (!aka) return
-        var alias
         var writeStream
         if (doc.type === 'directory') {
-          alias = `${aka}.tar`
+          var alias = `${aka}.tar`
           writeStream = fs.createWriteStream(alias)
-          writeStream.on('finish', () => {
+          writeStream.on('finish', function () {
             const readTar = fs.createReadStream(alias)
-            readTar.on('end', () => {
-              fs.unlink(alias, err => {
+            readTar.on('end', function () {
+              fs.unlink(alias, function (err) {
                 if (err) console.error(err)
               })
             })
@@ -179,9 +185,13 @@ const trap = { // all-in-1 factory that cooks up dom elements
           writeStream = fs.createWriteStream(aka)
         }
         console.log('saving out!!!')
-        makeReadable(Buffer.from(doc.data, 'hex'))
-          .pipe(zlib.createGunzip())
-          .pipe(writeStream)
+        broker.consume(doc.port, doc.host, doc.filepath,
+                       function (err, socket) {
+          socket.pipe(zlib.createGunzip()).pipe(writeStream)
+        })
+        // makeReadable(Buffer.from(doc.data, 'hex'))
+        //   .pipe(zlib.createGunzip())
+        //   .pipe(writeStream)
       })
 
     }
