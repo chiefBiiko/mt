@@ -2,14 +2,7 @@ var fs = require('fs')
 var path = require('path')
 
 function stat (entry, opts, cb) {
-  if (opts.dereference) fs.stat(entry, cb)
-  else fs.lstat(entry, cb)
-}
-
-function fulfill (entries) {
-  return entries.map(function (entry) {
-    return path.join(__dirname, entry)
-  })
+  opts.dereference ? fs.stat(entry, cb) : fs.lstat(entry, cb)
 }
 
 function wishlistDirs (dir, opts, callback) {
@@ -18,11 +11,11 @@ function wishlistDirs (dir, opts, callback) {
     if (err) return callback(err)
     var pending = entries.length
     var list = []
-    entries.forEach(function (entry, i) {
+    entries.forEach(function (entry) {
       stat(path.join(dir, entry), opts, function(err, stats) {
         if (err) return callback(err)
         if (stats.isDirectory()) list.push(entry)
-        if (!--pending) return callback(null, opts.full ? fulfill(list) : list)
+        if (!--pending) callback(null, list)
       })
     })
   })

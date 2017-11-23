@@ -31,7 +31,7 @@ tape('filepaths-group multiple filepaths', t => {
     if (err) t.end(err)
 
     t.is(data.entireDirectories.length, 1, 'should have detected 1 entire dir')
-    t.is(data.singleFiles.length, 1, 'should have detected 1 single files')
+    t.is(data.singleFiles.length, 1, 'should have detected 1 single file')
 
     t.end()
   })
