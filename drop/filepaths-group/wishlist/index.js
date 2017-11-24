@@ -6,8 +6,8 @@ function stat (entry, opts, cb) {
 }
 
 function fulfill (dir, entry, opts) {
-  return opts.full
-    ? path.join(path.isAbsolute(dir) ? '' : __dirname, dir, entry) : entry
+  if (!opts.full) return entry
+  else return path.join(path.isAbsolute(dir) ? '' : __dirname, dir, entry)
 }
 
 function wishlist (dir, opts, callback) {
@@ -17,7 +17,7 @@ function wishlist (dir, opts, callback) {
     var pending = entries.length
     var list = { dirs: [], files: [] }
     entries.forEach(function (entry) {
-      stat(path.join(dir, entry), opts, function(err, stats) {
+      stat(path.join(dir, entry), opts, function (err, stats) {
         if (err) return callback(err)
         if (stats.isDirectory()) list.dirs.push(fulfill(dir, entry, opts))
         else list.files.push(fulfill(dir, entry, opts))

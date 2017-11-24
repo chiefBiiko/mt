@@ -1,5 +1,3 @@
-const fs = require('fs')
-const path = require('path')
 const countEntries = require('./count-top-entries/index')
 const wishlist = require('./wishlist/index')
 
