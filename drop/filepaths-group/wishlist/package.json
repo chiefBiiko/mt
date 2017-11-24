@@ -1,14 +1,14 @@
 {
-  "name": "wishlist-dirs",
+  "name": "wishlist",
   "version": "0.0.0",
-  "description": "list top-level directories in a directory",
+  "description": "list top-level entries in a directory",
   "main": "index.js",
   "scripts": {
     "test": "tape test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chiefbiiko/wishlist-dirs.git"
+    "url": "https://github.com/chiefbiiko/wishlist-dirs.git"
   },
   "keywords": [
     "list",

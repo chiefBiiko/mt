@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const ops = require('pojo-ops')
 const countEntries = require('./count-top-entries/index')
-const wishlistDirs = require('./wishlist-dirs/index')
+const wishlist = require('./wishlist/index')
 
 function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
   countEntries(dir, function (err, count) {
@@ -12,10 +12,12 @@ function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
     } else if (!count.dirs) {
       cb(null, true)
     } else {
-      wishlistDirs(dir, {}, function (err, wishlist) {
+      wishlist(dir, { full: true }, function (err, wishlist) {
         if (err) return cb(err)
-        wishlist.forEach(function (entry) {
-          gotAllNestedFiles(path.join(dir, entry), map, cb)
+        wishlist.dirs.forEach(function (d) {
+          console.log('wishlist full dir',d)
+          gotAllNestedFiles(d, map, cb)
+          // gotAllNestedFiles(path.join(dir, d), map, cb)
         })
       })
     }
