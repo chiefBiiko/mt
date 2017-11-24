@@ -1,7 +1,7 @@
 var fs = require('fs')
 var path = require('path')
 var tape = require('tape')
-var fileBroker = require('./index')
+var filePlug = require('./index')
 
 var self = __filename
 
@@ -13,8 +13,8 @@ tape.onFinish(function () {
 
 tape('file sharing', function (t) {
 
-  var a = fileBroker()
-  var b = fileBroker()
+  var a = filePlug()
+  var b = filePlug()
 
   a.listen(10000, '127.0.0.1', function () {
 
@@ -39,10 +39,10 @@ tape('file sharing', function (t) {
 })
 
 
-tape('exceptions', function (t) {
+tape('numb exceptions', function (t) {
 
-  var a = fileBroker()
-  var b = fileBroker()
+  var a = filePlug()
+  var b = filePlug()
 
   a.listen(10000, '127.0.0.1', function () {
 

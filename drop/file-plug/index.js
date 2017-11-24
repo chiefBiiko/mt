@@ -4,21 +4,24 @@ var pump = require('pump')
 
 function noop () {}
 
-function fileBroker (onPumpEnd) {
+function filePlug (onPumpEnd) {
   if (!onPumpEnd) onPumpEnd = noop
-  var broker = net.createServer(function (socket) {
+  var plug = net.createServer(function (socket) {
     socket.on('data', function (buf) {
       pump(fs.createReadStream(buf.toString()), socket, function (err) {
-        if (err) return onPumpEnd(err)
-        broker.supplied++
+        if (err) {
+          socket.destroy(err)
+          return onPumpEnd(err)
+        }
+        plug.supplied++
         onPumpEnd(null, buf.toString())
       })
     })
   })
-  broker.consume = function (port, host, filepath, callback) {
+  plug.consume = function (port, host, filepath, callback) {
     var socket = net.connect(port, host, function () {
       socket.write(filepath, function () {
-        broker.consumed++
+        plug.consumed++
         callback(null, socket)
       })
       socket.on('error', function (err) {
@@ -26,9 +29,9 @@ function fileBroker (onPumpEnd) {
       })
     })
   }
-  broker.consumed = 0
-  broker.supplied = 0
-  return broker
+  plug.consumed = 0
+  plug.supplied = 0
+  return plug
 }
 
-module.exports = fileBroker
+module.exports = filePlug

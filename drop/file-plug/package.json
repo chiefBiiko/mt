@@ -1,5 +1,5 @@
 {
-  "name": "file-broker",
+  "name": "file-plug",
   "version": "0.0.0",
   "description": "tcp server for simple file sharing",
   "main": "index.js",
