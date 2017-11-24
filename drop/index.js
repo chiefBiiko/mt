@@ -14,7 +14,7 @@ const tar = require('tar-fs')
 const zlib = require('zlib')
 const filegroup = require('./filepaths-group/index')
 const prettyHeap = require('pretty-heap-used')
-const fileBroker = require('./file-broker/index')
+const filePlug = require('./file-plug/index')
 // const be = require('be-of-type')
 // const is = {/*...*/}
 
@@ -29,22 +29,22 @@ const makeReadable = buf => {
 }
 
 const swarm = discoverySwarm({ dht: false })
-const broker = fileBroker()
+const plug = filePlug()
 
 var view
 var me
 var team
 var logs
-var brokerport
+var myport
 
 const loginHandler = e => {
   me = trap.getLoginNameInput().value
   team = trap.getLoginTeamInput().value
   logs = scuttleupBlacklist(levelup(memdown(`./${me}.db`)))
-  brokerport = hashToPort(me) - 1
+  myport = hashToPort(me)
   logs.createReadStream({ live: true }).on('data', dataHandler)
-  swarm.listen(hashToPort(me))
-  broker.listen(brokerport/*, '0.0.0.0'*/)
+  swarm.listen(myport)
+  plug.listen(myport - 1/*, '0.0.0.0'*/)
   swarm.join(team, { announce: true })
   view.removeChild(trap.getLoginForm())
   view.appendChild(trap.getDump())
@@ -74,7 +74,7 @@ const dropHandler = files => {
               type: item[0],
               filepath: item[1],
               host: swarm.address().address,
-              port: brokerport,
+              port: plugport,
               data: buf.toString('hex'),
               sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
             }))
@@ -102,17 +102,20 @@ const dataHandler = data => {
 
   console.log(doc)
 
-  view.appendChild(trap.makeFilebox(data.peer, data.seq, doc))
+  trap.getBoard().appendChild(trap.makeFilebox(data.peer, data.seq, doc))
   trap.updateMetrics()
 }
 
 const trap = { // all-in-1 factory that cooks up dom elements
-  _counter: null,
-  _dump: null,
   _login: null,
   _name: null,
   _team: null,
   _join: null,
+  _counter: null,
+  _profiler: null,
+  _dump: null,
+  _board: null,
+  _main: null,
   _validator(e) {
     const valid =
       [ this._name, this._team ].every(ui => /[^\s]/.test(ui.value))
@@ -121,98 +124,40 @@ const trap = { // all-in-1 factory that cooks up dom elements
     this._join.style.color = valid ? 'gold' : '#999'
     if (valid && e.keyCode === 13) loginHandler(e)
   },
-  getLoginForm() {
-    if (this._login) return this._login
-    this._login = document.createElement('div')
+  getLoginNameInput() {
+    if (this._name) return this._name
     this._name = document.createElement('input')
-    this._team = document.createElement('input')
-    this._join = document.createElement('input')
-    this._login.id = 'login'
     this._name.classList.add('textinput')
-    this._team.classList.add('textinput')
-    this._join.classList.add('okbutton')
     this._name.placeholder = 'yo name'
+    return this._name
+  },
+  getLoginTeamInput() {
+    if (this._team) return this._team
+    this._team = document.createElement('input')
+    this._team.classList.add('textinput')
     this._team.placeholder = 'da team'
+    return this._team
+  },
+  getLoginButton() {
+    if (this._join) return this._join
+    this._join = document.createElement('input')
+    this._join.classList.add('okbutton')
     this._join.value = 'join'
     this._join.type = 'submit'
     this._join.disabled = true
     this._join.style.cursor = 'not-allowed'
-    this._login.onkeyup = this._validator.bind(this)
     this._join.onclick = loginHandler
-    this._login.appendChild(this._name)
-    this._login.appendChild(this._team)
-    this._login.appendChild(this._join)
+    return this._join
+  },
+  getLoginForm() {
+    if (this._login) return this._login
+    this._login = document.createElement('div')
+    this._login.id = 'login'
+    this._login.onkeyup = this._validator.bind(this)
+    this._login.appendChild(this.getLoginNameInput())
+    this._login.appendChild(this.getLoginTeamInput())
+    this._login.appendChild(this.getLoginButton())
     return this._login
-  },
-  getLoginNameInput() {
-    return this._name
-  },
-  getLoginTeamInput() {
-    return this._team
-  },
-  getDump() {
-    if (this._dump) return this._dump
-    this._dump = document.createElement('div')
-    this._dump.id = 'dump'
-    this._dump.innerText = 'drag and drop\nfiles and directories'
-    dragDrop(this._dump, dropHandler)
-    return this._dump
-  },
-  makeFilebox(peer, seq, doc) {
-    const filebox = document.createElement('div')
-    const savebtn = document.createElement('span')
-    const trashbtn = document.createElement('span')
-    const saveHandler = () => {
-
-      console.log('doc', doc)
-
-      dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
-        if (!aka) return
-        var writeStream
-        if (doc.type === 'directory') {
-          var alias = `${aka}.tar`
-          writeStream = fs.createWriteStream(alias)
-          writeStream.on('finish', function () {
-            const readTar = fs.createReadStream(alias)
-            readTar.on('end', function () {
-              fs.unlink(alias, function (err) {
-                if (err) console.error(err)
-              })
-            })
-            readTar.pipe(tar.extract(aka))
-          })
-        } else {
-          writeStream = fs.createWriteStream(aka)
-        }
-        console.log('saving out!!!')
-        broker.consume(doc.port, doc.host, doc.filepath,
-                       function (err, socket) {
-          socket.pipe(zlib.createGunzip()).pipe(writeStream)
-        })
-        // makeReadable(Buffer.from(doc.data, 'hex'))
-        //   .pipe(zlib.createGunzip())
-        //   .pipe(writeStream)
-      })
-
-    }
-    const trashHandler = e => {
-      logs.blacklist(peer, seq, err => {
-        if (err) return console.error(err)
-        view.removeChild(e.target.parentNode) // aka filebox
-      })
-    }
-    savebtn.onclick = saveHandler
-    savebtn.innerText = 'save'
-    savebtn.classList.add('savebtn')
-    trashbtn.onclick = trashHandler
-    trashbtn.innerText = 'trash'
-    trashbtn.classList.add('trashbtn')
-    filebox.innerText =
-      `${doc.username} is sharing ${doc.type} ${doc.filename}`
-    filebox.classList.add('filebox')
-    filebox.appendChild(savebtn)
-    filebox.appendChild(trashbtn)
-    return filebox
   },
   getCounter () {
     if (this._counter) return this._counter
@@ -241,6 +186,83 @@ const trap = { // all-in-1 factory that cooks up dom elements
           `${Math.round(mem.heapUsedPercent * 100)}%`
     }
     return this._profiler
+  },
+  getDump() {
+    if (this._dump) return this._dump
+    this._dump = document.createElement('div')
+    this._dump.id = 'dump'
+    this._dump.innerText = 'drag and drop\nfiles and directories'
+    dragDrop(this._dump, dropHandler)
+    return this._dump
+  },
+  getBoard() {
+    if (this._board) return this._board
+    this._board = document.createElement('div')
+    this._board.id = 'board'
+    this._board.style.height = 100
+    this._board.style.border = '5px dotted black'
+    this._board.clearAll = function (callback) {
+      while (this._board.children.length) {
+        this._board.removeChild(this._board.children[0])
+      }
+      if (callback) callback(null)
+    }
+    return this._board
+  },
+  makeFilebox(peer, seq, doc) {
+    const filebox = document.createElement('div')
+    const savebtn = document.createElement('span')
+    const trashbtn = document.createElement('span')
+    const saveHandler = () => {
+
+      console.log('doc', doc)
+
+      dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
+        if (!aka) return
+        var writeStream
+        if (doc.type === 'directory') {
+          var alias = `${aka}.tar`
+          writeStream = fs.createWriteStream(alias)
+          writeStream.on('finish', function () {
+            const readTar = fs.createReadStream(alias)
+            readTar.on('end', function () {
+              fs.unlink(alias, function (err) {
+                if (err) console.error(err)
+              })
+            })
+            readTar.pipe(tar.extract(aka))
+          })
+        } else {
+          writeStream = fs.createWriteStream(aka)
+        }
+        console.log('saving out!!!')
+        plug.consume(doc.port, doc.host, doc.filepath, function (err, socket) {
+          socket.pipe(zlib.createGunzip()).pipe(writeStream)
+        })
+        // makeReadable(Buffer.from(doc.data, 'hex'))
+        //   .pipe(zlib.createGunzip())
+        //   .pipe(writeStream)
+      })
+
+    }
+    const trashHandler = e => {
+      logs.blacklist(peer, seq, err => {
+        if (err) return console.error(err)
+        view.removeChild(e.target.parentNode) // aka filebox
+      })
+    }
+    savebtn.onclick = saveHandler
+    savebtn.innerText = 'save'
+    savebtn.classList.add('savebtn')
+    trashbtn.onclick = trashHandler
+    trashbtn.innerText = 'trash'
+    trashbtn.classList.add('trashbtn')
+    filebox.innerText =
+      `${doc.username} is sharing ${doc.type} ${doc.filename}`
+    filebox.classList.add('filebox')
+    filebox.appendChild(savebtn)
+    filebox.appendChild(trashbtn)
+    return filebox
   },
   updateMetrics() {
     this.getCounter().update()

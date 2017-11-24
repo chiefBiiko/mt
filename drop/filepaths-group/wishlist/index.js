@@ -20,7 +20,7 @@ function wishlist (dir, opts, callback) {
       stat(path.join(dir, entry), opts, function (err, stats) {
         if (err) return callback(err)
         if (stats.isDirectory()) list.dirs.push(fulfill(dir, entry, opts))
-        else list.files.push(fulfill(dir, entry, opts))
+        else if (stats.isFile()) list.files.push(fulfill(dir, entry, opts))
         if (!--pending) callback(null, list)
       })
     })

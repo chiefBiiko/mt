@@ -14,7 +14,8 @@ function count (dir, opts, callback) {
     entries.forEach(function (entry) {
       stat(path.join(dir, entry), opts, function (err, stats) {
         if (err) return callback(err)
-        stats.isDirectory() ? stash.dirs++ : stash.files++
+        if (stats.isDirectory()) stash.dirs++
+        else if (stats.isFile()) stash.files++
         if (!--pending) callback(null, stash)
       })
     })
