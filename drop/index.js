@@ -1,112 +1,84 @@
-const crypto = require('crypto')
-const fs = require('fs')
-const net = require('net')
-const concat = require('concat-stream')
-const hashToPort = require('hash-to-port')
-const discoverySwarm = require('discovery-swarm')
-const dragDrop = require('drag-drop')
-const dialog = require('electron').remote.dialog
-const levelup = require('levelup')
-const memdown = require('memdown')
-const scuttleupBlacklist = require('scuttleup-blacklist')
-const Readable = require('stream').Readable
-const tar = require('tar-fs')
-const zlib = require('zlib')
-const filegroup = require('./filepaths-group/index')
-const prettyHeap = require('pretty-heap-used')
-const filePlug = require('./file-plug/index')
-// const be = require('be-of-type')
-// const is = {/*...*/}
+var hashToPort = require('hash-to-port')
+var local = require('my-local-ip')
+var discoverySwarm = require('discovery-swarm')
+var dragDrop = require('drag-drop')
+var dialog = require('electron').remote.dialog
+var levelup = require('levelup')
+var memdown = require('memdown')
+var scuttleup = require('scuttleup-blacklist')
+var filegroup = require('./filepaths-group/index')
+var prettyHeap = require('pretty-heap-used') // toss
+var filePlug = require('./file-plug/index')
 
-const sha256 = buf =>
-  crypto.createHash('sha256').update(buf).digest().toString('hex')
+var swarm = discoverySwarm({ dht: false })
+var plug = filePlug()
 
-const makeReadable = buf => {
-  const stream = new Readable()
-  stream.push(buf)
-  stream.push(null)
-  return stream
-}
+process.on('exit', function () {
+  swarm.close()
+  plug.close()
+})
 
-const swarm = discoverySwarm({ dht: false })
-const plug = filePlug()
+var me, team, view, logs, myport, plugport
 
-var view
-var me
-var team
-var logs
-var myport
-
-const loginHandler = e => {
+function loginHandler (e) {
   me = trap.getLoginNameInput().value
   team = trap.getLoginTeamInput().value
-  logs = scuttleupBlacklist(levelup(memdown(`./${me}.db`)))
+  logs = scuttleup(levelup(memdown('./' + me + '.db')))
   myport = hashToPort(me)
+  plugport = myport - 1
   logs.createReadStream({ live: true }).on('data', dataHandler)
   swarm.listen(myport)
-  plug.listen(myport - 1/*, '0.0.0.0'*/)
+  plug.listen(plugport, local())
   swarm.join(team, { announce: true })
   view.removeChild(trap.getLoginForm())
-  view.appendChild(trap.getDump())
-  view.appendChild(trap.getCounter())
-  view.appendChild(trap.getProfiler())
+  view.appendChild(trap.getMain())
 }
 
-const dropHandler = files => {
-
-  console.log('files', files)
-
-  // distinguishing files and dirs
-  filegroup(files.map(file => file.path), (err, data) => {
+function dropHandler (files) {
+  var filepaths = files.map(function (file) {
+    return file.path
+  })
+  filegroup(filepaths, function (err, data) {
     if (err) return console.error(err)
-
-    console.log(data)
-
-    data.singleFiles.map(file => [ 'file', file ])
-      .concat(data.entireDirectories.map(dir => [ 'directory', dir ]))
-      .forEach(item => {
-        (item[0] === 'file' ? fs.createReadStream(item[1]) : tar.pack(item[1]))
-          .pipe(zlib.createGzip())
-          .pipe(concat(buf => {
-            logs.append(JSON.stringify({
-              username: me,
-              filename: item[1].replace(/^.+(\/|\\)(.+)$/, '$2'),
-              type: item[0],
-              filepath: item[1],
-              host: swarm.address().address,
-              port: plugport,
-              data: buf.toString('hex'),
-              sha256: sha256(Buffer.isBuffer(buf) ? buf : '')
-            }))
-          }))
-       })
+    var items = data.singleFiles.map(function (file) {
+      return [ 'file', file ]
+    }).concat(data.entireDirs.map(function (dir) {
+      return [ 'directory', dir ]
+    }))
+    items.forEach(function (item) {
+      logs.append(JSON.stringify({
+        username: me,
+        filename: item[1].replace(/^.+(\/|\\)(.+)$/, '$2'),
+        type: item[0],
+        filepath: item[1],
+        host: local(),
+        port: plugport
+      }))
+    })
   })
   trap.updateMetrics()
 }
 
-const connectionHandler = (socket, peer) => {
-  console.log(`[ new peer connection from ${peer.host}:${peer.port} ]`)
+function connectionHandler (socket, peer) {
+  console.log('[ new peer @ ' + peer.host + ':' + peer.port + ' ]')
   socket.pipe(
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
   trap.updateMetrics()
 }
 
-const dataHandler = data => {
+function dataHandler (data) {
   var doc
   try {
     doc = JSON.parse(data.entry.toString())
   } catch (err) {
     return console.error(err)
   }
-
-  console.log(doc)
-
   trap.getBoard().appendChild(trap.makeFilebox(data.peer, data.seq, doc))
   trap.updateMetrics()
 }
 
-const trap = { // all-in-1 factory that cooks up dom elements
+var trap = { // all-in-1 factory that cooks up dom elements
   _login: null,
   _name: null,
   _team: null,
@@ -117,8 +89,9 @@ const trap = { // all-in-1 factory that cooks up dom elements
   _board: null,
   _main: null,
   _validator(e) {
-    const valid =
-      [ this._name, this._team ].every(ui => /[^\s]/.test(ui.value))
+    var valid = [ this._name, this._team ].every(function (ui) {
+      return /[^\s]/.test(ui.value)
+    })
     this._join.disabled = !valid
     this._join.style.cursor = valid ? 'pointer' : 'not-allowed'
     this._join.style.color = valid ? 'gold' : '#999'
@@ -165,25 +138,25 @@ const trap = { // all-in-1 factory that cooks up dom elements
     this._counter.id = 'counter'
     this._counter.style.position = 'fixed'
     this._counter.style.top = this._counter.style.right = '10px'
-    this._counter.innerText = '0 peers'
-    this._counter.update = () => {
-      this._counter.innerText =
-        `${swarm.connected} peer${swarm.connected !== 1 ? 's' : ''}`
+    this._counter.innerText = '0 peers\nsupplied: 0\nconsumed: 0'
+    this._counter.update = function () {
+      this.innerText =
+        swarm.connected + ' peer' + (swarm.connected !== 1 ? 's' : '') +
+        '\nsupplied: ' + plug.supplied + '\nconsumed: ' + plug.consumed
     }
     return this._counter
   },
-  getProfiler() {
+  getProfiler() { // toss profiler
     if (this._profiler) return this._profiler
     this._profiler = document.createElement('span')
     this._profiler.id = 'profiler'
     this._profiler.style.position = 'fixed'
     this._profiler.style.top = this._profiler.style.left = '10px'
     this._profiler.innerText = 'mem use\n0MB ~ 0%'
-    this._profiler.update = () => {
-      const mem = prettyHeap(process.memoryUsage())
-      this._profiler.innerText =
-        `mem use:\n${mem.heapUsedMB}MB ~ ` +
-          `${Math.round(mem.heapUsedPercent * 100)}%`
+    this._profiler.update = function () {
+      var mem = prettyHeap(process.memoryUsage())
+      this.innerText = 'mem use:\n' + mem.heapUsedMB + 'MB ~ ' +
+        Math.round(mem.heapUsedPercent * 100) + '%'
     }
     return this._profiler
   },
@@ -209,59 +182,40 @@ const trap = { // all-in-1 factory that cooks up dom elements
     }
     return this._board
   },
+  getMain() {
+    if (this._main) return this._main
+    this._main = document.createElement('div')
+    this._main.id = 'main'
+    this._main.appendChild(this.getCounter())
+    this._main.appendChild(this.getProfiler())
+    this._main.appendChild(this.getDump())
+    this._main.appendChild(this.getBoard())
+    return this._main
+  },
   makeFilebox(peer, seq, doc) {
-    const filebox = document.createElement('div')
-    const savebtn = document.createElement('span')
-    const trashbtn = document.createElement('span')
-    const saveHandler = () => {
-
-      console.log('doc', doc)
-
-      dialog.showSaveDialog({ title: `Save ${doc.filename} as...` }, aka => {
-        if (!aka) return
-        var writeStream
-        if (doc.type === 'directory') {
-          var alias = `${aka}.tar`
-          writeStream = fs.createWriteStream(alias)
-          writeStream.on('finish', function () {
-            const readTar = fs.createReadStream(alias)
-            readTar.on('end', function () {
-              fs.unlink(alias, function (err) {
-                if (err) console.error(err)
-              })
-            })
-            readTar.pipe(tar.extract(aka))
-          })
-        } else {
-          writeStream = fs.createWriteStream(aka)
-        }
-        console.log('saving out!!!')
-        plug.consume(doc.port, doc.host, doc.filepath, function (err, socket) {
-          socket.pipe(zlib.createGunzip()).pipe(writeStream)
+    var filebox = document.createElement('div')
+    var savebtn = document.createElement('span')
+    var trashbtn = document.createElement('span')
+    function saveHandler () {
+      dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
+        if (!as) return
+        console.log('consuming...' + as)
+        document.body.style.cursor = 'progress'
+        plug.consume(doc.port, doc.host, doc.type, doc.filepath, as,
+          function (err, mypath) {
+            if (err) return console.error(err)
+            console.log('consumed ', mypath, ' !!!')
+            document.body.style.cursor = 'auto'
         })
-        // makeReadable(Buffer.from(doc.data, 'hex'))
-        //   .pipe(zlib.createGunzip())
-        //   .pipe(writeStream)
-      })
-
-    }
-    const trashHandler = e => {
-      logs.blacklist(peer, seq, err => {
-        if (err) return console.error(err)
-        view.removeChild(e.target.parentNode) // aka filebox
       })
     }
     savebtn.onclick = saveHandler
     savebtn.innerText = 'save'
     savebtn.classList.add('savebtn')
-    trashbtn.onclick = trashHandler
-    trashbtn.innerText = 'trash'
-    trashbtn.classList.add('trashbtn')
     filebox.innerText =
-      `${doc.username} is sharing ${doc.type} ${doc.filename}`
+      doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
     filebox.classList.add('filebox')
     filebox.appendChild(savebtn)
-    filebox.appendChild(trashbtn)
     return filebox
   },
   updateMetrics() {
@@ -270,7 +224,7 @@ const trap = { // all-in-1 factory that cooks up dom elements
   }
 }
 
-const initView = () => {
+function initView () {
   view = document.createElement('div')
   view.appendChild(trap.getLoginForm())
   document.body.appendChild(view)

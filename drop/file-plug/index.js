@@ -73,7 +73,7 @@ function _consume (port, host, type, filepath, mypath, callback) {
       })
       setTimeout(function () {
         if (!socket.bytesRead) socket.destroy('consume timeout')
-      }, 250)
+      }, 500)
     })
   })
 }
