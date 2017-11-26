@@ -1,7 +1,7 @@
 var fs = require('fs')
 var path = require('path')
 var tape = require('tape')
-var filePlug = require('./index')
+var fsPlug = require('./index')
 
 var selfie = __filename
 var dope = selfie + ' yea!'
@@ -17,8 +17,8 @@ tape.onFinish(function () {
 
 tape('file sharing', function (t) {
 
-  var a = filePlug()
-  var b = filePlug()
+  var a = fsPlug()
+  var b = fsPlug()
 
   a.listen(10000, '127.0.0.1', function () {
 
@@ -40,8 +40,8 @@ tape('file sharing', function (t) {
 
 tape('dir sharing', function (t) {
 
-  var a = filePlug()
-  var b = filePlug()
+  var a = fsPlug()
+  var b = fsPlug()
 
   a.listen(10000, '127.0.0.1', function () {
 
@@ -66,8 +66,8 @@ tape('exceptions', function (t) {
 
   t.plan(1)
 
-  var a = filePlug()
-  var b = filePlug()
+  var a = fsPlug()
+  var b = fsPlug()
 
   a.listen(10000, '127.0.0.1', function () {
 

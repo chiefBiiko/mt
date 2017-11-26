@@ -7,20 +7,26 @@ var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
 var filegroup = require('./filepaths-group/index')
-var prettyHeap = require('pretty-heap-used') // toss
-var filePlug = require('./file-plug/index')
+var fsPlug = require('./fs-plug/index')
 
-var swarm = discoverySwarm({ dht: false })
-var plug = filePlug()
+var me, team, view, logs, myport, plugport, swarm, plug
 
-var me, team, view, logs, myport, plugport
+function initView () {
+  view = document.createElement('div')
+  view.appendChild(trap.getLogin())
+  document.body.appendChild(view)
+  document.onmouseenter = document.onmouseleave = trap.updateMetrics.bind(trap)
+}
 
 function loginHandler (e) {
   me = trap.getLoginNameInput().value
   team = trap.getLoginTeamInput().value
   logs = scuttleup(levelup(memdown('./' + me + '.db')))
+  swarm = discoverySwarm({ dht: false })
+  plug = fsPlug()
   myport = hashToPort(me)
   plugport = myport - 1
+  swarm.on('connection', connectionHandler)
   logs.createReadStream({ live: true }).on('data', infoHandler)
   swarm.listen(myport)
   plug.listen(plugport, local())
@@ -73,13 +79,28 @@ function infoHandler (info) {
   trap.updateMetrics()
 }
 
+function escapeHandler () {
+  var loginbtn = trap.getLoginButton()
+  trap.getLoginTeamInput().value = ''
+  loginbtn.disabled = true
+  loginbtn.style.cursor = 'not-allowed'
+  loginbtn.style.color = '#999'
+  trap.getBoard().clearAll()
+  view.removeChild(trap.getMain())
+  view.appendChild(trap.getLogin())
+  memdown.clearGlobalStore(true)
+  swarm.leave(team)
+  swarm.close()
+  plug.close()
+}
+
 var trap = { // all-in-1 factory that cooks up dom elements
   _login: null,
   _name: null,
   _team: null,
   _join: null,
   _counter: null,
-  _profiler: null,
+  _escaper: null,
   _dump: null,
   _board: null,
   _main: null,
@@ -135,26 +156,22 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._counter.style.top = this._counter.style.right = '10px'
     this._counter.innerText = '0 peers\nsupplied: 0\nconsumed: 0'
     this._counter.update = function () {
+      if (!swarm || !plug) return
       this.innerText =
         swarm.connected + ' peer' + (swarm.connected !== 1 ? 's' : '') +
         '\nsupplied: ' + plug.supplied + '\nconsumed: ' + plug.consumed
     }
     return this._counter
   },
-  getProfiler() { // toss profiler
-    if (this._profiler) return this._profiler
-    this._profiler = document.createElement('span')
-    this._profiler.id = 'profiler'
-    this._profiler.style.position = 'fixed'
-    this._profiler.style.top = this._profiler.style.left = '10px'
-    this._profiler.innerText = 'mem use\n0MB ~ 0%'
-    this._profiler.update = function () {
-      var mem = prettyHeap(process.memoryUsage())
-      this.innerText =
-        'mem use:\n' + mem.heapUsedMB + 'MB ~ ' +
-        Math.round(mem.heapUsedPercent * 100) + '%'
-    }
-    return this._profiler
+  getEscaper() {
+    if (this._escaper) return this._escaper
+    this._escaper = document.createElement('span')
+    this._escaper.id = 'escaper'
+    this._escaper.style.position = 'fixed'
+    this._escaper.style.top = this._escaper.style.left = '10px'
+    this._escaper.innerText = 'escape'
+    this._escaper.onclick = escapeHandler
+    return this._escaper
   },
   getDump() {
     if (this._dump) return this._dump
@@ -170,12 +187,12 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._board.id = 'board'
     this._board.style.height = 100
     this._board.style.border = '5px dotted black'
-    this._board.clearAll = function (callback) {
+    this._board.clearAll = (function (callback) {
       while (this._board.children.length) {
         this._board.removeChild(this._board.children[0])
       }
       if (callback) callback(null)
-    }
+    }).bind(trap)
     return this._board
   },
   getMain() {
@@ -183,7 +200,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._main = document.createElement('div')
     this._main.id = 'main'
     this._main.appendChild(this.getCounter())
-    this._main.appendChild(this.getProfiler())
+    this._main.appendChild(this.getEscaper())
     this._main.appendChild(this.getDump())
     this._main.appendChild(this.getBoard())
     return this._main
@@ -215,18 +232,9 @@ var trap = { // all-in-1 factory that cooks up dom elements
   },
   updateMetrics() {
     this.getCounter().update()
-    this.getProfiler().update()
   }
 }
 
-function initView () {
-  view = document.createElement('div')
-  view.appendChild(trap.getLogin())
-  document.body.appendChild(view)
-  document.onmouseenter = document.onmouseleave = trap.updateMetrics.bind(trap)
-}
-
-swarm.on('connection', connectionHandler)
 window.onload = initView
 
 process.on('exit', function () {

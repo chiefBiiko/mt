@@ -21,7 +21,6 @@
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
     "my-local-ip": "^1.0.0",
-    "pretty-heap-used": "0.0.0",
     "pump": "^1.0.3",
     "scuttleup-blacklist": "^3.4.0",
     "tar-fs": "^1.16.0"
