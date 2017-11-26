@@ -13,11 +13,6 @@ var filePlug = require('./file-plug/index')
 var swarm = discoverySwarm({ dht: false })
 var plug = filePlug()
 
-process.on('exit', function () {
-  swarm.close()
-  plug.close()
-})
-
 var me, team, view, logs, myport, plugport
 
 function loginHandler (e) {
@@ -26,11 +21,11 @@ function loginHandler (e) {
   logs = scuttleup(levelup(memdown('./' + me + '.db')))
   myport = hashToPort(me)
   plugport = myport - 1
-  logs.createReadStream({ live: true }).on('data', dataHandler)
+  logs.createReadStream({ live: true }).on('data', infoHandler)
   swarm.listen(myport)
   plug.listen(plugport, local())
   swarm.join(team, { announce: true })
-  view.removeChild(trap.getLoginForm())
+  view.removeChild(trap.getLogin())
   view.appendChild(trap.getMain())
 }
 
@@ -67,14 +62,14 @@ function connectionHandler (socket, peer) {
   trap.updateMetrics()
 }
 
-function dataHandler (data) {
+function infoHandler (info) {
   var doc
   try {
-    doc = JSON.parse(data.entry.toString())
+    doc = JSON.parse(info.entry.toString())
   } catch (err) {
     return console.error(err)
   }
-  trap.getBoard().appendChild(trap.makeFilebox(data.peer, data.seq, doc))
+  trap.getBoard().appendChild(trap.makeFilebox(info.peer, info.seq, doc))
   trap.updateMetrics()
 }
 
@@ -122,7 +117,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._join.onclick = loginHandler
     return this._join
   },
-  getLoginForm() {
+  getLogin() {
     if (this._login) return this._login
     this._login = document.createElement('div')
     this._login.id = 'login'
@@ -155,7 +150,8 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._profiler.innerText = 'mem use\n0MB ~ 0%'
     this._profiler.update = function () {
       var mem = prettyHeap(process.memoryUsage())
-      this.innerText = 'mem use:\n' + mem.heapUsedMB + 'MB ~ ' +
+      this.innerText =
+        'mem use:\n' + mem.heapUsedMB + 'MB ~ ' +
         Math.round(mem.heapUsedPercent * 100) + '%'
     }
     return this._profiler
@@ -195,7 +191,6 @@ var trap = { // all-in-1 factory that cooks up dom elements
   makeFilebox(peer, seq, doc) {
     var filebox = document.createElement('div')
     var savebtn = document.createElement('span')
-    var trashbtn = document.createElement('span')
     function saveHandler () {
       dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
         if (!as) return
@@ -203,9 +198,9 @@ var trap = { // all-in-1 factory that cooks up dom elements
         document.body.style.cursor = 'progress'
         plug.consume(doc.port, doc.host, doc.type, doc.filepath, as,
           function (err, mypath) {
+            document.body.style.cursor = 'auto'
             if (err) return console.error(err)
             console.log('consumed ', mypath, ' !!!')
-            document.body.style.cursor = 'auto'
         })
       })
     }
@@ -226,10 +221,15 @@ var trap = { // all-in-1 factory that cooks up dom elements
 
 function initView () {
   view = document.createElement('div')
-  view.appendChild(trap.getLoginForm())
+  view.appendChild(trap.getLogin())
   document.body.appendChild(view)
   document.onmouseenter = document.onmouseleave = trap.updateMetrics.bind(trap)
 }
 
 swarm.on('connection', connectionHandler)
 window.onload = initView
+
+process.on('exit', function () {
+  swarm.close()
+  plug.close()
+})

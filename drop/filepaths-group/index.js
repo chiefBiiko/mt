@@ -1,12 +1,12 @@
-const countEntries = require('./count-top-entries/index')
+const count = require('count-top-entries')
 const wishlist = require('./wishlist/index')
 
 function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
-  countEntries(dir, function (err, count) {
+  count(dir, function (err, data) {
     if (err) return cb(err)
-    if (!map[dir] || (count.files !== map[dir].length)) {
+    if (!map[dir] || (data.files !== map[dir].length)) {
       cb(null, false)
-    } else if (!count.dirs) {
+    } else if (!data.dirs) {
       cb(null, true)
     } else {
       wishlist(dir, { full: true }, function (err, wishlist) {

@@ -25,6 +25,7 @@ function FilePlug (opts, onconsumer) {
 
   this.supplied = 0
   this.consumed = 0
+  this._opts = opts
 
   var self = this
 
@@ -73,7 +74,7 @@ function _consume (port, host, type, filepath, mypath, callback) {
       })
       setTimeout(function () {
         if (!socket.bytesRead) socket.destroy('consume timeout')
-      }, 500)
+      }, self._opts.timeout || 500)
     })
   })
 }

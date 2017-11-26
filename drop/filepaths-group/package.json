@@ -22,7 +22,9 @@
     "url": "https://github.com/chiefbiiko/filepaths-group/issues"
   },
   "homepage": "https://github.com/chiefbiiko/filepaths-group",
-  "dependencies": {},
+  "dependencies": {
+    "count-top-entries": "0.0.0"
+  },
   "devDependencies": {
     "standard": "^10.0.3",
     "tape": "^4.8.0"
