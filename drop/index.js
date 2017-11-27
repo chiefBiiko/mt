@@ -42,20 +42,15 @@ function dropHandler (files) {
   var filepaths = files.map(function (file) {
     return file.path
   })
-  filegroup(filepaths, function (err, data) {
-    if (err) return console.error(err)
+  filegroup(filepaths, function (err, groups) {
+    if (err) return console.error(err) // pass thru to user!
     var localhost = local()
-    var items = data.singleFiles.map(function (file) {
-      return [ 'file', file ]
-    }).concat(data.entireDirs.map(function (dir) {
-      return [ 'directory', dir ]
-    }))
-    items.forEach(function (item) {
+    groups.forEach(function (item) {
       logs.append(JSON.stringify({
         username: me,
-        filename: item[1].replace(/^.+(\/|\\)(.+)$/, '$2'),
-        type: item[0],
-        filepath: item[1],
+        filename: item.path.replace(/^.+(\/|\\)(.+)$/, '$2'),
+        type: item.type,
+        filepath: item.path,
         host: localhost,
         port: plugport
       }))
@@ -64,7 +59,7 @@ function dropHandler (files) {
   trap.updateMetrics()
 }
 
-function connectionHandler (socket, peer) {
+function connectionHandler (socket, peer) { // TODO: pump
   socket.pipe(
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
@@ -80,15 +75,14 @@ function infoHandler (info) {
   } catch (err) {
     return console.error(err)
   }
-  trap.getBoard().appendChild(trap.makeFilebox(info.peer, info.seq, doc))
+  trap.getBoard().appendChild(trap.makeFilebox(/*info.peer, info.seq, */doc))
   trap.updateMetrics()
   new Notification('New drop!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
   })
 }
 
-function saveHandler (e, doc) {
-  e.stopPropagation()
+function saveHandler (e, doc) { // TODO: progress bar
   dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
     if (!as) return
     console.log('consuming...' + as)
@@ -96,7 +90,7 @@ function saveHandler (e, doc) {
     plug.consume(doc.port, doc.host, doc.type, doc.filepath, as,
       function (err, mypath) {
         document.body.style.cursor = 'auto'
-        if (err) return console.error(err)
+        if (err) return console.error(err) // pass thru to user!
         console.log('consumed ', mypath, ' !!!')
     })
   })
@@ -231,35 +225,28 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._main.appendChild(this.getBoard())
     return this._main
   },
-  makeFilebox(peer, seq, doc) {
+  makeFilebox(/*peer, seq, */doc) {
     var filebox = document.createElement('div')
     var msgbox = document.createElement('p')
     var savebtn = document.createElement('span')
+    filebox.isOpen = true
+    filebox.onclick = function (e) {
+      Array.from(this.children).forEach(function (child) {
+        child.style.display = this.isOpen ? 'none' : 'block'
+      }, this)
+      this.isOpen = !this.isOpen
+    }
     savebtn.onclick = function (e) {
+      e.stopPropagation()
       saveHandler(e, doc)
     }
     savebtn.innerText = 'Save'
     savebtn.classList.add('savebtn')
     msgbox.innerText =
-      doc.username + ' is sharing ' + doc.type + ' ' + doc.filename + ' '
+      doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
     filebox.title = doc.username + ': ' + doc.filename
     filebox.classList.add('filebox')
     msgbox.classList.add('msgbox')
-    filebox.isOpen = true
-    filebox.onclick = function (e) {
-      e.stopPropagation()
-      if (this.isOpen) {
-        this.isOpen = !this.isOpen
-        Array.from(this.children).forEach(function (child) {
-          child.style.display = 'none'
-        })
-      } else {
-        this.isOpen = !this.isOpen
-        Array.from(this.children).forEach(function (child) {
-          child.style.display = 'block'
-        })
-      }
-    }
     filebox.appendChild(savebtn)
     filebox.appendChild(msgbox)
     return filebox

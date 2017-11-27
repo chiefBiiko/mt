@@ -19,56 +19,64 @@ function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
   })
 }
 
-function maybeVerbose (opts, trap) {
-  if (opts.verbose) return trap
-  else return { entireDirs: trap.entireDirs, singleFiles: trap.singleFiles }
-}
+// function maybeVerbose (opts, trap) {
+//   if (opts.verbose) return trap
+//   else return { dirs: trap.dirs, files: trap.files }
+// }
 
 function group (filepaths, opts, callback) {
   if (typeof opts === 'function') return group(filepaths, {}, opts)
   if (!callback) throw new Error('gimme a callback, gonna callback(err, data)')
-  var trap = { entireDirs: [], singleFiles: [], _f: [], _m: {}, _t: [] }
+  var trap = { groups: [], dirs: [], files: [], f: [], m: {}, t: [] }
   // split filepaths into file objects
-  trap._f = filepaths.map(function (filepath) {
+  trap.f = filepaths.map(function (filepath) {
     return { path: filepath, dir: filepath.replace(/^(.+)(\/|\\).*$/, '$1') }
   })
-  // if single file input always early return as singleFile
-  if (trap._f.length === 1) {
-    trap.singleFiles.push(trap._f[0].path)
-    return callback(null, trap)
+  // if single file input always early return as single file
+  if (trap.f.length === 1) {
+    return callback(null, [ { type: 'file', path: trap.f[0].path } ])
   }
   // map files to dirs
-  trap._m = trap._f.reduce(function (acc, cur) {
+  trap.m = trap.f.reduce(function (acc, cur) {
     if (acc.hasOwnProperty(cur.dir)) acc[cur.dir].push(cur.path)
     else acc[cur.dir] = [ cur.path ]
     return acc
   }, {})
-  // push keys of props that represent an entire dir to trap.entir... via temp
-  var dirs = Object.keys(trap._m)
+  // push keys of props that represent an entire dir to trap.dirs... via trap.t
+  var dirs = Object.keys(trap.m)
   var pending = dirs.length
   dirs.forEach(function (dir) {
-    gotAllNestedFiles(dir, trap._m, function (err, truth) {
+    gotAllNestedFiles(dir, trap.m, function (err, truth) {
       if (err) return callback(err, null)
-      if (truth) trap._t.push(dir)
+      if (truth) trap.t.push(dir)
       if (!--pending) finishUp()
     })
   })
   // finish
   function finishUp () {
-    // push filepaths that are not covered by trap._t to trap.singleFiles
-    Array.prototype.push.apply(trap.singleFiles,
-      trap._f.filter(function (file) {
-        return !trap._t.some(function (dir) { return dir === file.dir })
+    // push filepaths that are not covered by trap.t to trap.files
+    Array.prototype.push.apply(trap.files,
+      trap.f.filter(function (file) {
+        return !trap.t.some(function (dir) { return dir === file.dir })
       }).map(function (file) { return file.path })
     )
-    // collapse nested dirs in temp to trap.entireDirs
-    Array.prototype.push.apply(trap.entireDirs,
-      trap._t.filter(function (dir, i, arr) {
+    // collapse nested dirs in trap.t to trap.dirs
+    Array.prototype.push.apply(trap.dirs,
+      trap.t.filter(function (dir, i, arr) {
         var others = arr.filter(function (d) { return d !== dir })
         return !others.some(function (other) { return dir.startsWith(other) })
       })
     )
-    callback(null, maybeVerbose(opts, trap))
+    // package neatly
+    trap.groups = trap.files.map(function (file) {
+      return { type: 'file', path: file }
+    })
+    Array.prototype.push.apply(trap.groups,
+      trap.dirs.map(function (dir) {
+        return { type: 'directory', path: dir }
+      })
+    )
+    callback(null, trap.groups)
   }
 }
 

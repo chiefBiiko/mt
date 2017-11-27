@@ -1,22 +1,24 @@
-const fs = require('fs')
-const path = require('path')
-const tape = require('tape')
-const group = require('./index')
+var fs = require('fs')
+var path = require('path')
+var tape = require('tape')
+var group = require('./index')
 
 fs.mkdirSync(path.join(__dirname, 'fraud'))
 fs.mkdirSync(path.join(__dirname, 'fraud', 'z'))
 
-const filepaths = [
+var filepaths = [
   path.join(__dirname, 'noop0.txt'),
   path.join(__dirname, 'fraud', 'noop1.txt'),
   path.join(__dirname, 'fraud', 'noop2.txt'),
   path.join(__dirname, 'fraud', 'z', 'z.txt')
 ]
 
-filepaths.forEach(filepath => fs.writeFileSync(filepath, '419'))
+filepaths.forEach(function (filepath) {
+  fs.writeFileSync(filepath, '419')
+})
 
-tape.onFinish(() => {
-  filepaths.forEach((filepath, i , arr) => {
+tape.onFinish(function () {
+  filepaths.forEach(function (filepath, i , arr) {
     fs.unlinkSync(filepath)
     if (i === arr.length - 1) {
       fs.rmdirSync(path.join(__dirname, 'fraud', 'z'))
@@ -25,26 +27,40 @@ tape.onFinish(() => {
   })
 })
 
-tape('filepaths-group multiple filepaths', t => {
+tape('filepaths-group multiple filepaths', function (t) {
 
-  group(filepaths, (err, data) => {
+  group(filepaths, function (err, data) {
     if (err) t.end(err)
 
-    t.is(data.entireDirs.length, 1, 'should have detected 1 entire dir')
-    t.is(data.singleFiles.length, 1, 'should have detected 1 single file')
+    var dirs = data.filter(function (obj) {
+      return obj.type === 'directory'
+    })
+    var files = data.filter(function (obj) {
+      return obj.type === 'file'
+    })
+
+    t.is(dirs.length, 1, 'should have detected 1 entire dir')
+    t.is(files.length, 1, 'should have detected 1 single file')
 
     t.end()
   })
 
 })
 
-tape('filepaths-group one filepath', t => {
+tape('filepaths-group one filepath', function (t) {
 
-  group(filepaths.slice(filepaths.length - 1), (err, data) => {
+  group(filepaths.slice(filepaths.length - 1), function (err, data) {
     if (err) t.end(err)
 
-    t.is(data.entireDirs.length, 0, 'should not indicate any dir')
-    t.is(data.singleFiles.length, 1, 'should detect 1 single file')
+    var dirs = data.filter(function (obj) {
+      return obj.type === 'directory'
+    })
+    var files = data.filter(function (obj) {
+      return obj.type === 'file'
+    })
+
+    t.is(dirs.length, 0, 'should not indicate any dir')
+    t.is(files.length, 1, 'should detect 1 single file')
 
     t.end()
   })
