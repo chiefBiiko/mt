@@ -1,38 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset='utf-8'>
   <style>
     html { font: normal normal 16px 'arial'; }
-    .okbutton, .textinput {
+    #loginbtn, .textinput {
       box-sizing: border-box;
       height: 25px;
       margin: 5px 0;
       padding: 0 5px;
       width: 100%;
     }
-    .okbutton {
+    #loginbtn {
       background-color: #fff;
       color: #999;
       font: normal bold 16px 'arial';
       text-align: right;
     }
+    #headline {
+      overflow: hidden;
+    }
     #counter {
-      font: normal bold 16px 'arial';
+      background-color: #0099cc;
+      color: #fff;
+      margin-bottom: 10px;
       text-align: right;
+      padding: 5px 10px;
+    }
+    #escapebtn {
+      background-color: #f21c0d;
+      color: #fff;
+      cursor: pointer;
+      display: inline-block;
+      margin: 0 10px 10px 0;
+      padding: 5px;
+      text-align: center;
+      width: 40px;
+    }
+    #escapebtn:hover {
+      background-color: #da190b;
+    }
+    .filebox {
+      background-color: #83c985;
+      border: 2px solid #4CAF50;
+      margin-bottom: 10px;
+      min-height: 10px;
+      overflow: hidden;
+      word-wrap: break-word;
+    }
+    .msgbox {
+      color: #fff;
+      font: normal bold 16px 'arial';
+      padding: 0 5px;
+    }
+    .savebtn {
+      background-color: #4CAF50;
+      color: #fff;
+      cursor: pointer;
+      float: right;
+      margin: 0 0 5px 5px;
+      padding: 5px;
+      text-align: center;
+      width: 40px;
+    }
+    .savebtn:hover {
+      background-color: #3e8e41;
     }
     #dump {
       background-color: gold;
       color: #fff;
-      cursor: pointer;
-      font: normal bold 24px 'arial';
+      font: normal bold 32px 'arial';
       height: 100px;
+      margin-bottom: 10px;
+      padding: 5px;
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .savebtn, .trashbtn {
-      cursor: pointer;
+    #board {
+      height: 100px;
+    }
+    @media only screen and (max-width: 255px) {
+      #dump {
+        font: normal bold 22px 'arial';
+      }
     }
   </style>
   <script src="./index.js"></script>

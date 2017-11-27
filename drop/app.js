@@ -1,7 +1,7 @@
-const electron = require('electron')
+var electron = require('electron')
 
-electron.app.on('ready', () => {
-  const mainWindow = new electron.BrowserWindow({ width: 400, height: 400 })
-  mainWindow.loadURL(`file://${__dirname}/index.html`)
-  mainWindow.openDevTools()
+electron.app.on('ready', function () {
+  var mw = new electron.BrowserWindow({ width: 300, height: 300 })
+  mw.loadURL('file://' + __dirname + '/index.html')
+  mw.openDevTools()
 })
