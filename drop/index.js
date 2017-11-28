@@ -39,10 +39,7 @@ function loginHandler (e) {
 }
 
 function dropHandler (files) {
-  var filepaths = files.map(function (file) {
-    return file.path
-  })
-  filegroup(filepaths, function (err, groups) {
+  filegroup(files, { size: true }, function (err, groups) {
     if (err) return console.error(err) // pass thru to user!
     var localhost = local()
     groups.forEach(function (item) {
@@ -51,6 +48,7 @@ function dropHandler (files) {
         filename: item.path.replace(/^.+(\/|\\)(.+)$/, '$2'),
         type: item.type,
         filepath: item.path,
+        size: item.size,
         host: localhost,
         port: plugport
       }))

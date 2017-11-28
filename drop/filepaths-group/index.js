@@ -1,5 +1,5 @@
-const count = require('count-top-entries')
-const wishlist = require('./wishlist/index')
+var count = require('count-top-entries')
+var wishlist = require('./wishlist/index')
 
 function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
   count(dir, function (err, data) {
@@ -19,64 +19,84 @@ function gotAllNestedFiles (dir, map, cb) { // cb tells the truth
   })
 }
 
-// function maybeVerbose (opts, trap) {
-//   if (opts.verbose) return trap
-//   else return { dirs: trap.dirs, files: trap.files }
-// }
-
-function group (filepaths, opts, callback) {
-  if (typeof opts === 'function') return group(filepaths, {}, opts)
-  if (!callback) throw new Error('gimme a callback, gonna callback(err, data)')
-  var trap = { groups: [], dirs: [], files: [], f: [], m: {}, t: [] }
-  // split filepaths into file objects
-  trap.f = filepaths.map(function (filepath) {
+// designed to be used with ferross drag-drop module
+function group (files, opts, callback) { // opts: { size: boolean }
+  if (typeof opts === 'function') return group(files, {}, opts)
+  var trap = { dirs: [], files: [], paths: [], fdir: [], map: {}, temp: [] }
+  var groups = []
+  Array.prototype.push.apply(trap.paths, files.map(function (file) {
+    return file.path
+  }))
+  // if single file input always early return as single file
+  if (!trap.paths.length)
+    return callback(null, [])
+  else if (trap.paths.length === 1)
+    return callback(null, [ { type: 'file', path: trap.paths[0] } ])
+  // split paths into file objects
+  trap.fdir = trap.paths.map(function (filepath) {
     return { path: filepath, dir: filepath.replace(/^(.+)(\/|\\).*$/, '$1') }
   })
-  // if single file input always early return as single file
-  if (trap.f.length === 1) {
-    return callback(null, [ { type: 'file', path: trap.f[0].path } ])
-  }
   // map files to dirs
-  trap.m = trap.f.reduce(function (acc, cur) {
+  trap.map = trap.fdir.reduce(function (acc, cur) {
     if (acc.hasOwnProperty(cur.dir)) acc[cur.dir].push(cur.path)
     else acc[cur.dir] = [ cur.path ]
     return acc
   }, {})
   // push keys of props that represent an entire dir to trap.dirs... via trap.t
-  var dirs = Object.keys(trap.m)
+  var dirs = Object.keys(trap.map)
   var pending = dirs.length
   dirs.forEach(function (dir) {
-    gotAllNestedFiles(dir, trap.m, function (err, truth) {
+    gotAllNestedFiles(dir, trap.map, function (err, truth) {
       if (err) return callback(err, null)
-      if (truth) trap.t.push(dir)
+      if (truth) trap.temp.push(dir)
       if (!--pending) finishUp()
     })
   })
   // finish
   function finishUp () {
-    // push filepaths that are not covered by trap.t to trap.files
+    // push paths that are not covered by trap.t to trap.files
     Array.prototype.push.apply(trap.files,
-      trap.f.filter(function (file) {
-        return !trap.t.some(function (dir) { return dir === file.dir })
-      }).map(function (file) { return file.path })
+      trap.fdir.filter(function (file) {
+        return !trap.temp.some(function (dir) {
+          return dir === file.dir
+        })
+      }).map(function (file) {
+        return file.path
+      })
     )
     // collapse nested dirs in trap.t to trap.dirs
     Array.prototype.push.apply(trap.dirs,
-      trap.t.filter(function (dir, i, arr) {
-        var others = arr.filter(function (d) { return d !== dir })
-        return !others.some(function (other) { return dir.startsWith(other) })
+      trap.temp.filter(function (dir, i, arr) {
+        return !arr.filter(function (d) {
+          return d !== dir
+        }).some(function (other) {
+          return dir.startsWith(other)
+        })
       })
     )
     // package neatly
-    trap.groups = trap.files.map(function (file) {
+    groups = trap.files.map(function (file) {
       return { type: 'file', path: file }
-    })
-    Array.prototype.push.apply(trap.groups,
-      trap.dirs.map(function (dir) {
-        return { type: 'directory', path: dir }
+    }).concat(trap.dirs.map(function (dir) {
+      return { type: 'directory', path: dir }
+    }))
+    // maybe add size
+    if (opts.size) {
+      groups = groups.map(function (item, i) {
+        if (item.type === 'file') {
+          item.size = files.filter(function (file) {
+            return file.path === item.path
+          })[0].size
+        } else {
+          item.size = files.reduce(function (acc, cur) {
+            if (cur.path.startsWith(item.path)) acc += cur.size
+            return acc
+          }, 0)
+        }
+        return item
       })
-    )
-    callback(null, trap.groups)
+    }
+    callback(null, groups)
   }
 }
 
