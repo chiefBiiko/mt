@@ -2,9 +2,9 @@
   "name": "drop",
   "version": "0.0.1",
   "description": "drop share files within a local network",
-  "main": "app.js",
+  "main": "base.js",
   "scripts": {
-    "start": "./node_modules/.bin/electron ./app.js",
+    "start": "./node_modules/.bin/electron ./base.js",
     "style": "./node_modules/.bin/standard --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

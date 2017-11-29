@@ -36,10 +36,15 @@ function FilePlug (opts, onconsumer) {
         if (err) return onconsumer(err)
         var readStream = stats.isDirectory()
           ? tar.pack(filepath) : fs.createReadStream(filepath)
-        pump(readStream, zlib.createGzip(), socket, function (err) {
+        var gzip = zlib.createGzip()
+        pump(readStream, gzip, socket, function (err) {
           if (err) return onconsumer(err)
           self.supplied++
           onconsumer(null, filepath)
+        })
+        gzip.on('data', function (_) {
+          console.log('supplied ' + socket.bytesWritten)
+          self.emit('supplied', socket.bytesWritten)
         })
       })
     })
@@ -71,6 +76,10 @@ function _consume (port, host, type, filepath, mypath, callback) {
             })
           })
         }
+      })
+      socket.on('data', function (_) {
+        console.log('consumed ' + socket.bytesRead)
+        self.emit('consumed', socket.bytesRead)
       })
       setTimeout(function () {
         if (!socket.bytesRead) socket.destroy('consume timeout')

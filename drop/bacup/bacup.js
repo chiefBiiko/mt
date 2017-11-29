@@ -3,18 +3,16 @@ var local = require('my-local-ip')
 var discoverySwarm = require('discovery-swarm')
 var dragDrop = require('drag-drop')
 var dialog = require('electron').remote.dialog
-var ipcRenderer = require('electron').ipcRenderer
 var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
 var filegroup = require('./filepaths-group/index')
-// var fsPlug = require('./fs-plug/index')
+var fsPlug = require('./fs-plug/index')
 
-var me, team, myport, plugport, swarm, logs, view//, plug
+var me, team, view, logs, myport, plugport, swarm, plug
 
 function initView () {
   view = document.createElement('div')
-  view.id = 'view'
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
 }
@@ -25,20 +23,17 @@ function loginHandler (e) {
   team = trap.getLoginTeamInput().value
   logs = scuttleup(levelup(memdown('./' + me + '.db')))
   swarm = discoverySwarm({ dht: false })
+  plug = fsPlug()
   myport = hashToPort(me)
   plugport = myport - 1
-  // plug = fsPlug()
-  ipcRenderer.send('plug-listen', plugport)
-
   swarm.on('connection', connectionHandler)
   logs.createReadStream({ live: true }).on('data', infoHandler)
   swarm.listen(myport)
-  // plug.listen(plugport, local())
+  plug.listen(plugport, local())
   swarm.join(team, { announce: true }, function () {
     document.body.style.cursor = 'auto'
   })
-  document.onmouseenter = document.onmouseleave =
-    trap.requestSuppliedCount.bind(trap)
+  document.onmouseenter = document.onmouseleave = trap.updateMetrics.bind(trap)
   view.removeChild(trap.getLogin())
   view.appendChild(trap.getMain())
 }
@@ -59,14 +54,14 @@ function dropHandler (files) {
       }))
     })
   })
-  trap.requestSuppliedCount()
+  trap.updateMetrics()
 }
 
 function connectionHandler (socket, peer) { // TODO: pump
   socket.pipe(
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
-  trap.updatePeerCount()
+  trap.updateMetrics()
   console.log('[ new peer @ ' + peer.host + ':' + peer.port + ' ]')
   new Notification('New peer!', { body: '@ ' + peer.host + ':' + peer.port })
 }
@@ -79,7 +74,7 @@ function infoHandler (info) {
     return console.error(err)
   }
   trap.getBoard().appendChild(trap.makeFilebox(/*info.peer, info.seq, */doc))
-  trap.requestSuppliedCount()
+  trap.updateMetrics()
   new Notification('New drop!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
   })
@@ -90,24 +85,14 @@ function saveHandler (e, doc) { // TODO: progress bar
     if (!as) return
     console.log('consuming...' + as)
     document.body.style.cursor = 'progress'
-    // document.querySelector('#view > *') ???
-    // plug.consume(doc.port, doc.host, doc.type, doc.filepath, as,
-    //   function (err, mypath) {
-    //     document.body.style.cursor = 'auto'
-    //     if (err) return console.error(err) // pass thru to user!
-    //     console.log('consumed ', mypath, ' !!!')
-    // })
-    ipcRenderer.send(
-      'plug-consume', doc.port, doc.host, doc.type, doc.size, doc.filepath, as
-    )
+    plug.consume(doc.port, doc.host, doc.type, doc.filepath, as,
+      function (err, mypath) {
+        document.body.style.cursor = 'auto'
+        if (err) return console.error(err) // pass thru to user!
+        console.log('consumed ', mypath, ' !!!')
+    })
   })
 }
-
-ipcRenderer.on('done-consumed', function (e, err, mypath) {
-  document.body.style.cursor = 'auto'
-  if (err) return console.error(err) // pass thru to user!
-  console.log('consumed ', mypath, ' !!!')
-})
 
 function escapeHandler () {
   var loginbtn = trap.getLoginButton()
@@ -186,13 +171,10 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._counter.style.float = 'right'
     this._counter.style.top = this._counter.style.right = '10px'
     this._counter.innerText = 'peers: 0 supplied: 0'
-    this._counter.update = function (_, supplied) {
-      // if (!swarm || !supplied/*|| !plug*/) return
-      // console.log('update',_, supplied)
+    this._counter.update = function () {
+      if (!swarm || !plug) return
       this.innerText =
-        ' peers: ' + swarm.connected + ' supplied: ' +
-        (supplied || this.innerText.replace(/^.*supplied:\s(\d+).*$/, '$1')) // + ' supplied: ' + plug.supplied
-
+        ' peers: ' + swarm.connected + ' supplied: ' + plug.supplied
     }
     return this._counter
   },
@@ -267,17 +249,10 @@ var trap = { // all-in-1 factory that cooks up dom elements
     filebox.appendChild(msgbox)
     return filebox
   },
-  requestSuppliedCount() {
-    ipcRenderer.send('supply-count', null)
-  },
-  updatePeerCount() {
+  updateMetrics() {
     this.getCounter().update()
   }
 }
-
-ipcRenderer.on('supplied-count', function (e, supplied) {
-  trap.getCounter().update(null, supplied)
-})
 
 window.onload = initView
 
