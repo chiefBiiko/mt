@@ -11,12 +11,9 @@
   "author": "Noah Anabiik Schwarz",
   "license": "MIT",
   "dependencies": {
-    "be-of-type": "0.0.0",
-    "concat-stream": "^1.6.0",
     "discovery-swarm": "^4.4.2",
     "drag-drop": "^2.13.2",
     "electron": "^1.8.1",
-    "gunzip-maybe": "^1.4.1",
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",

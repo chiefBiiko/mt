@@ -8,9 +8,18 @@ var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
 var filegroup = require('./filepaths-group/index')
-// var fsPlug = require('./fs-plug/index')
 
-var me, team, myport, plugport, swarm, logs, view//, plug
+function notify (title, data) {
+  return new Notification(title, data)
+}
+
+var me, team, myport, plugport, swarm, logs, view
+
+function exitHandler () {
+  swarm.close(function () {
+    window.close()
+  })
+}
 
 function initView () {
   view = document.createElement('div')
@@ -20,25 +29,22 @@ function initView () {
 }
 
 function loginHandler (e) {
-  document.body.style.cursor = 'progress'
+  if (swarm && swarm.listening) return swarm.close(loginHandler.bind(null, e))
   me = trap.getLoginNameInput().value
   team = trap.getLoginTeamInput().value
   logs = scuttleup(levelup(memdown('./' + me + '.db')))
   swarm = discoverySwarm({ dht: false })
   myport = hashToPort(me)
   plugport = myport - 1
-  // plug = fsPlug()
   ipcRenderer.send('plug-listen', plugport)
-
   swarm.on('connection', connectionHandler)
   logs.createReadStream({ live: true }).on('data', infoHandler)
   swarm.listen(myport)
-  // plug.listen(plugport, local())
-  swarm.join(team, { announce: true }, function () {
-    document.body.style.cursor = 'auto'
-  })
+  swarm.join(team, { announce: true })
   document.onmouseenter = document.onmouseleave =
     trap.requestSuppliedCount.bind(trap)
+  trap.getSubTeam().set(team)
+  trap.getSubName().set(me)
   view.removeChild(trap.getLogin())
   view.appendChild(trap.getMain())
 }
@@ -55,7 +61,8 @@ function dropHandler (files) {
         filepath: item.path,
         size: item.size,
         host: localhost,
-        port: plugport
+        port: plugport,
+        timestamp: new Date().getTime()
       }))
     })
   })
@@ -67,8 +74,7 @@ function connectionHandler (socket, peer) { // TODO: pump
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
   trap.updatePeerCount()
-  console.log('[ new peer @ ' + peer.host + ':' + peer.port + ' ]')
-  new Notification('New peer!', { body: '@ ' + peer.host + ':' + peer.port })
+  notify('New peer!', { body: '@ ' + peer.host + ':' + peer.port })
 }
 
 function infoHandler (info) {
@@ -80,33 +86,27 @@ function infoHandler (info) {
   }
   trap.getBoard().appendChild(trap.makeFilebox(/*info.peer, info.seq, */doc))
   trap.requestSuppliedCount()
-  new Notification('New drop!', {
+  notify('New drop!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
   })
 }
 
-function saveHandler (e, doc) { // TODO: progress bar
+function saveHandler (e, doc, id) { // TODO: progress bar
   dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
     if (!as) return
-    console.log('consuming...' + as)
-    document.body.style.cursor = 'progress'
-    // document.querySelector('#view > *') ???
-    // plug.consume(doc.port, doc.host, doc.type, doc.filepath, as,
-    //   function (err, mypath) {
-    //     document.body.style.cursor = 'auto'
-    //     if (err) return console.error(err) // pass thru to user!
-    //     console.log('consumed ', mypath, ' !!!')
-    // })
-    ipcRenderer.send(
-      'plug-consume', doc.port, doc.host, doc.type, doc.size, doc.filepath, as
+    ipcRenderer.send('plug-consume',
+      doc.port, doc.host, doc.type, doc.filepath, as, doc.size, id
     )
   })
 }
 
-ipcRenderer.on('done-consumed', function (e, err, mypath) {
-  document.body.style.cursor = 'auto'
-  if (err) return console.error(err) // pass thru to user!
-  console.log('consumed ', mypath, ' !!!')
+ipcRenderer.on('done-consumed', function (e, err, mypath, id) {
+  // if (err) return console.error(err) // pass thru to user!
+  console.log('DONE-CONSUMED', '#' + id)
+  var saveicon = document.querySelector('#' + id)
+  saveicon.src = './open-iconic/svg/' + (err ? 'warning.svg' : 'check.svg')
+  saveicon.title = mypath
+  saveicon.style.display = 'inline'
 })
 
 function escapeHandler () {
@@ -114,7 +114,6 @@ function escapeHandler () {
   memdown.clearGlobalStore(true)
   swarm.leave(team)
   swarm.close()
-  plug.close()
   trap.getLoginTeamInput().value = ''
   loginbtn.disabled = true
   loginbtn.style.cursor = 'not-allowed'
@@ -129,8 +128,13 @@ var trap = { // all-in-1 factory that cooks up dom elements
   _name: null,
   _team: null,
   _join: null,
-  _counter: null,
+  _peercount: null,
+  _suppliedcount: null,
+  _stats: null,
   _escaper: null,
+  _subhead: null,
+  _subteam: null,
+  _subname: null,
   _head: null,
   _dump: null,
   _board: null,
@@ -179,38 +183,64 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._login.appendChild(this.getLoginButton())
     return this._login
   },
-  getCounter () {
-    if (this._counter) return this._counter
-    this._counter = document.createElement('span')
-    this._counter.id = 'counter'
-    this._counter.style.float = 'right'
-    this._counter.style.top = this._counter.style.right = '10px'
-    this._counter.innerText = 'peers: 0 supplied: 0'
-    this._counter.update = function (_, supplied) {
-      // if (!swarm || !supplied/*|| !plug*/) return
-      // console.log('update',_, supplied)
-      this.innerText =
-        ' peers: ' + swarm.connected + ' supplied: ' +
-        (supplied || this.innerText.replace(/^.*supplied:\s(\d+).*$/, '$1')) // + ' supplied: ' + plug.supplied
+  getPeerCount() {
 
-    }
-    return this._counter
+  },
+  getStats () {
+    if (this._stats) return this._stats
+    this._stats = document.createElement('div')
+    this._stats.id = 'stats'
+    // this._stats.innerText = 'peers: 0 supplied: 0'
+    // this._stats.update = function (_, supplied) {
+    //   this.innerText =
+    //     ' peers: ' + swarm.connected + ' supplied: ' +
+    //     (supplied || this.innerText.replace(/^.*supplied:\s(\d+).*$/, '$1'))
+    //
+    // }
+    return this._stats
   },
   getEscaper() {
     if (this._escaper) return this._escaper
-    this._escaper = document.createElement('span')
+    this._escaper = document.createElement('img')
     this._escaper.id = 'escapebtn'
-    this._escaper.innerText = 'Esc'
+    // this._escaper.innerText = 'Esc'
+    this._escaper.src = './open-iconic/svg/account-logout.svg'
     this._escaper.onclick = escapeHandler
     return this._escaper
   },
   getHead() {
     if (this._head) return this._head
     this._head = document.createElement('div')
-    this._head.id = 'headline'
+    this._head.id = 'head'
     this._head.appendChild(this.getEscaper())
-    this._head.appendChild(this.getCounter())
+    this._head.appendChild(this.getStats())
     return this._head
+  },
+  getSubName() {
+    if (this._subname) return this._subname
+    this._subname = document.createElement('span')
+    this._subname.id = 'subname'
+    this._subname.set = (function (name) {
+      this._subname.innerText = name
+    }).bind(trap)
+    return this._subname
+  },
+  getSubTeam() {
+    if (this._subteam) return this._subteam
+    this._subteam = document.createElement('span')
+    this._subteam.id = 'subteam'
+    this._subteam.set = (function (team) {
+      this._subteam.innerText = team
+    }).bind(trap)
+    return this._subteam
+  },
+  getSubHead() {
+    if (this._subhead) return this._subhead
+    this._subhead = document.createElement('div')
+    this._subhead.id = 'subhead'
+    this._subhead.appendChild(this.getSubName())
+    this._subhead.appendChild(this.getSubTeam())
+    return this._subhead
   },
   getDump() {
     if (this._dump) return this._dump
@@ -237,14 +267,19 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._main = document.createElement('div')
     this._main.id = 'main'
     this._main.appendChild(this.getHead())
+    this._main.appendChild(this.getSubHead())
     this._main.appendChild(this.getDump())
     this._main.appendChild(this.getBoard())
     return this._main
   },
   makeFilebox(/*peer, seq, */doc) {
+    console.log(doc)
     var filebox = document.createElement('div')
-    var msgbox = document.createElement('p')
-    var savebtn = document.createElement('span')
+    var msgbox = document.createElement('div')
+    var msg = document.createElement('span')
+    var savebtn = document.createElement('img')
+    var trashbtn = document.createElement('img')
+    var saveicon = document.createElement('img')
     filebox.isOpen = true
     filebox.onclick = function (e) {
       Array.from(this.children).forEach(function (child) {
@@ -254,34 +289,50 @@ var trap = { // all-in-1 factory that cooks up dom elements
     }
     savebtn.onclick = function (e) {
       e.stopPropagation()
-      saveHandler(e, doc)
+      console.log('MAKEFILEBOX SAVEHANDLER', saveicon.id)
+      saveHandler(e, doc, saveicon.id)
     }
-    savebtn.innerText = 'Save'
-    savebtn.classList.add('savebtn')
-    msgbox.innerText =
-      doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
-    filebox.title = doc.username + ': ' + doc.filename
+    trashbtn.onclick = function (e) {
+      e.stopPropagation()
+      trap.getBoard().removeChild(this.parentNode)
+    }
+    filebox.id =
+      (doc.username + doc.filename + doc.timestamp).replace(/\./g, '')
     filebox.classList.add('filebox')
     msgbox.classList.add('msgbox')
+    savebtn.src = './open-iconic/svg/data-transfer-download.svg'
+    savebtn.classList.add('savebtn')
+    trashbtn.src = './open-iconic/svg/trash.svg'
+    trashbtn.classList.add('trashbtn')
+    msg.classList.add('message')
+    saveicon.id = 'saveicon' + filebox.id
+    saveicon.classList.add('saveicon')
+    saveicon.style.display = 'none'
+    filebox.title = doc.username + ': ' + doc.filename
+    msg.innerText =
+      doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
+    msgbox.appendChild(msg)
+    msgbox.appendChild(saveicon)
     filebox.appendChild(savebtn)
     filebox.appendChild(msgbox)
+    filebox.appendChild(trashbtn)
     return filebox
   },
   requestSuppliedCount() {
     ipcRenderer.send('supply-count', null)
   },
   updatePeerCount() {
-    this.getCounter().update()
+    this.getStats().update()
   }
 }
 
 ipcRenderer.on('supplied-count', function (e, supplied) {
-  trap.getCounter().update(null, supplied)
+  trap.getStats().update(null, supplied)
 })
 
 window.onload = initView
+window.onbeforeunload = exitHandler
 
-process.on('exit', function () {
-  swarm.close()
-  plug.close()
-})
+// process.on('exit', function () {
+//   swarm.close()
+// })

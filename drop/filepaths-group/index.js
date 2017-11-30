@@ -28,10 +28,13 @@ function group (files, opts, callback) { // opts: { size: boolean }
     return file.path
   }))
   // if single file input always early return as single file
-  if (!trap.paths.length)
+  if (!trap.paths.length) {
     return callback(null, [])
-  else if (trap.paths.length === 1)
-    return callback(null, [ { type: 'file', path: trap.paths[0] } ])
+  } else if (trap.paths.length === 1) {
+    var singleton = { type: 'file', path: trap.paths[0] }
+    if (opts.size) singleton.size = files[0].size
+    return callback(null, [ singleton ])
+  }
   // split paths into file objects
   trap.fdir = trap.paths.map(function (filepath) {
     return { path: filepath, dir: filepath.replace(/^(.+)(\/|\\).*$/, '$1') }
@@ -54,7 +57,7 @@ function group (files, opts, callback) { // opts: { size: boolean }
   })
   // finish
   function finishUp () {
-    // push paths that are not covered by trap.t to trap.files
+    // push paths that are not covered by trap.temp to trap.files
     Array.prototype.push.apply(trap.files,
       trap.fdir.filter(function (file) {
         return !trap.temp.some(function (dir) {
@@ -64,7 +67,7 @@ function group (files, opts, callback) { // opts: { size: boolean }
         return file.path
       })
     )
-    // collapse nested dirs in trap.t to trap.dirs
+    // collapse nested dirs in trap.temp to trap.dirs
     Array.prototype.push.apply(trap.dirs,
       trap.temp.filter(function (dir, i, arr) {
         return !arr.filter(function (d) {

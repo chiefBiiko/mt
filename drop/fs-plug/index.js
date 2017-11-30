@@ -43,8 +43,7 @@ function FilePlug (opts, onconsumer) {
           onconsumer(null, filepath)
         })
         gzip.on('data', function (_) {
-          console.log('supplied ' + socket.bytesWritten)
-          self.emit('supplied', socket.bytesWritten)
+          self.emit('bytes-supplied', socket.bytesWritten)
         })
       })
     })
@@ -78,14 +77,14 @@ function _consume (port, host, type, filepath, mypath, callback) {
         }
       })
       socket.on('data', function (_) {
-        console.log('consumed ' + socket.bytesRead)
-        self.emit('consumed', socket.bytesRead)
+        self.emit('bytes-consumed', socket.bytesRead)
       })
       setTimeout(function () {
         if (!socket.bytesRead) socket.destroy('consume timeout')
       }, self._opts.timeout || 500)
     })
   })
+  return socket
 }
 
 FilePlug.prototype.consume = _consume
