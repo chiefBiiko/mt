@@ -184,12 +184,37 @@ var trap = { // all-in-1 factory that cooks up dom elements
     return this._login
   },
   getPeerCount() {
-
+    if (this._peercount) return this._peercount
+    this._peercount = document.createElement('span')
+    this._peercount.id = 'peercount'
+    this._peercount.innerText = 0
+    this._peercount.update = (function () {
+      this._peercount.innerText = swarm.connected
+    }).bind(trap)
+    return this._peercount
+  },
+  getSuppliedCount() {
+    if (this._suppliedcount) return this._suppliedcount
+    this._suppliedcount = document.createElement('span')
+    this._suppliedcount.id = 'suppliedcount'
+    this._suppliedcount.innerText = 0
+    this._suppliedcount.update = (function (num) {
+      this._suppliedcount.innerText = num
+    }).bind(trap)
+    return this._suppliedcount
   },
   getStats () {
     if (this._stats) return this._stats
+    var peericon = document.createElement('img')
+    var suppliedicon = document.createElement('img')
     this._stats = document.createElement('div')
     this._stats.id = 'stats'
+    peericon.src = './open-iconic/svg/bolt.svg'
+    suppliedicon.src = './open-iconic/svg/arrow-thick-top.svg'
+    this._stats.appendChild(peericon)
+    this._stats.appendChild(this.getPeerCount())
+    this._stats.appendChild(suppliedicon)
+    this._stats.appendChild(this.getSuppliedCount())
     // this._stats.innerText = 'peers: 0 supplied: 0'
     // this._stats.update = function (_, supplied) {
     //   this.innerText =
@@ -322,12 +347,14 @@ var trap = { // all-in-1 factory that cooks up dom elements
     ipcRenderer.send('supply-count', null)
   },
   updatePeerCount() {
-    this.getStats().update()
+    // this.getStats().update()
+    this.getPeerCount().update()
   }
 }
 
 ipcRenderer.on('supplied-count', function (e, supplied) {
-  trap.getStats().update(null, supplied)
+  console.log('supplied-count', supplied)
+  trap.getSuppliedCount().update(/*null, */supplied)
 })
 
 window.onload = initView
