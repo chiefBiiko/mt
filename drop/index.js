@@ -8,16 +8,38 @@ var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
 var filegroup = require('./filepaths-group/index')
+// var ops = require('pojo-ops')
+
+function noop () {}
 
 function notify (title, data) {
   return new Notification(title, data)
 }
 
 var me, team, myport, plugport, swarm, logs, view
+var peers = {}
 
-function exitHandler () {
-  swarm.close(function () {
-    window.close()
+function peerExit (peer, username) {
+  trap.getBoard().clearAll(username)
+  peers[peer].forEach(function (seq) {
+    logs.blacklist(peer, seq, noop)
+  })
+}
+
+function exitHandler (e) {
+  console.log('unbeforeunload event', e)
+  console.log('shutting down...')
+  if (!logs || !swarm) return
+  if (e) e.preventDefault()
+  logs.append(JSON.stringify({ username: me, exit: true }), function (err) {
+    if (err) return callback(err) // pass thru to user !!!
+    setTimeout(function () {
+      swarm.leave(team)
+      swarm.close(function () {
+        memdown.clearGlobalStore(true)
+        if (e && e.type && e.type === 'unbeforeunload') window.close()
+      })
+    }, 100)
   })
 }
 
@@ -79,31 +101,32 @@ function connectionHandler (socket, peer) { // TODO: pump
 
 function infoHandler (info) {
   var doc
+  peers[info.peer]
+    ? peers[info.peer].push(info.seq) : peers[info.peer] = [ info.seq ]
   try {
     doc = JSON.parse(info.entry.toString())
   } catch (err) {
     return console.error(err)
   }
+  if (doc.exit) return peerExit(info.peer, doc.username)
   trap.getBoard().appendChild(trap.makeFilebox(/*info.peer, info.seq, */doc))
   trap.requestSuppliedCount()
-  notify('New drop!', {
+  notify('New share!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
   })
 }
 
-function saveHandler (e, doc, id) { // TODO: progress bar
+function saveHandler (e, doc, iconid) { // TODO: progress bar
   dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
     if (!as) return
     ipcRenderer.send('plug-consume',
-      doc.port, doc.host, doc.type, doc.filepath, as, doc.size, id
+      doc.port, doc.host, doc.type, doc.filepath, as, doc.size, iconid
     )
   })
 }
 
-ipcRenderer.on('done-consumed', function (e, err, mypath, id) {
-  // if (err) return console.error(err) // pass thru to user!
-  console.log('DONE-CONSUMED', '#' + id)
-  var saveicon = document.querySelector('#' + id)
+ipcRenderer.on('done-consumed', function (e, err, mypath, iconid) {
+  var saveicon = document.querySelector('#' + iconid)
   saveicon.src = './open-iconic/svg/' + (err ? 'warning.svg' : 'check.svg')
   saveicon.title = mypath
   saveicon.style.display = 'inline'
@@ -111,9 +134,7 @@ ipcRenderer.on('done-consumed', function (e, err, mypath, id) {
 
 function escapeHandler () {
   var loginbtn = trap.getLoginButton()
-  memdown.clearGlobalStore(true)
-  swarm.leave(team)
-  swarm.close()
+  exitHandler()
   trap.getLoginTeamInput().value = ''
   loginbtn.disabled = true
   loginbtn.style.cursor = 'not-allowed'
@@ -211,24 +232,18 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._stats.id = 'stats'
     peericon.src = './open-iconic/svg/bolt.svg'
     suppliedicon.src = './open-iconic/svg/arrow-thick-top.svg'
+    peericon.id = 'peericon'
+    suppliedicon.id = 'suppliedicon'
     this._stats.appendChild(peericon)
     this._stats.appendChild(this.getPeerCount())
     this._stats.appendChild(suppliedicon)
     this._stats.appendChild(this.getSuppliedCount())
-    // this._stats.innerText = 'peers: 0 supplied: 0'
-    // this._stats.update = function (_, supplied) {
-    //   this.innerText =
-    //     ' peers: ' + swarm.connected + ' supplied: ' +
-    //     (supplied || this.innerText.replace(/^.*supplied:\s(\d+).*$/, '$1'))
-    //
-    // }
     return this._stats
   },
   getEscaper() {
     if (this._escaper) return this._escaper
     this._escaper = document.createElement('img')
     this._escaper.id = 'escapebtn'
-    // this._escaper.innerText = 'Esc'
     this._escaper.src = './open-iconic/svg/account-logout.svg'
     this._escaper.onclick = escapeHandler
     return this._escaper
@@ -279,9 +294,16 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._board) return this._board
     this._board = document.createElement('div')
     this._board.id = 'board'
-    this._board.clearAll = (function (callback) {
-      while (this._board.children.length) {
-        this._board.removeChild(this._board.children[0])
+    this._board.clearAll = (function (username, callback) {
+      if (username) {
+        Array.from(document.querySelectorAll('#board > .' + username))
+          .forEach(function (filebox) {
+            this._board.removeChild(filebox)
+          }, trap)
+      } else {
+        while (this._board.children.length) {
+          this._board.removeChild(this._board.children[0])
+        }
       }
       if (callback) callback(null)
     }).bind(trap)
@@ -298,7 +320,6 @@ var trap = { // all-in-1 factory that cooks up dom elements
     return this._main
   },
   makeFilebox(/*peer, seq, */doc) {
-    console.log(doc)
     var filebox = document.createElement('div')
     var msgbox = document.createElement('div')
     var msg = document.createElement('span')
@@ -314,7 +335,6 @@ var trap = { // all-in-1 factory that cooks up dom elements
     }
     savebtn.onclick = function (e) {
       e.stopPropagation()
-      console.log('MAKEFILEBOX SAVEHANDLER', saveicon.id)
       saveHandler(e, doc, saveicon.id)
     }
     trashbtn.onclick = function (e) {
@@ -324,6 +344,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     filebox.id =
       (doc.username + doc.filename + doc.timestamp).replace(/\./g, '')
     filebox.classList.add('filebox')
+    filebox.classList.add(doc.username)
     msgbox.classList.add('msgbox')
     savebtn.src = './open-iconic/svg/data-transfer-download.svg'
     savebtn.classList.add('savebtn')
@@ -347,14 +368,12 @@ var trap = { // all-in-1 factory that cooks up dom elements
     ipcRenderer.send('supply-count', null)
   },
   updatePeerCount() {
-    // this.getStats().update()
     this.getPeerCount().update()
   }
 }
 
 ipcRenderer.on('supplied-count', function (e, supplied) {
-  console.log('supplied-count', supplied)
-  trap.getSuppliedCount().update(/*null, */supplied)
+  trap.getSuppliedCount().update(supplied)
 })
 
 window.onload = initView

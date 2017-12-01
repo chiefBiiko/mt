@@ -34,3 +34,7 @@ ipcMain.on('plug-consume',
     mw.setProgressBar(bytes / size)
   })
 })
+
+process.on('exit', function () {
+  plug.close()
+})
