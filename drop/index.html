@@ -18,24 +18,29 @@
       text-align: right;
     }
     #head {
-      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+    /*overflow: hidden;*/
     }
     #subhead {
       background-color: purple;
       color: #fff;
+      font: normal bold 16px 'arial';
       margin-bottom: 10px;
-      overflow: hidden;
+    /*overflow: hidden;*/
+      display: flex;
+      justify-content: space-between;
       padding: 5px 10px;
     }
     #subname {
-      float: right;
+    /*float: right;*/
     }
     #stats {
       background-color: #0099cc;
       color: #fff;
       cursor: default;
       display: inline-block;
-      float: right;
+    /*float: right;*/
       margin-bottom: 10px;
       text-align: right;
       padding: 5px 10px;
@@ -46,6 +51,7 @@
       margin: 0 10px 10px 0;
       padding: 7px 5px 5px 5px;
       height: 16px;
+      width: 16px;
     }
     #escapebtn:hover {
       background-color: #da190b;
@@ -56,28 +62,29 @@
       box-sizing: padding-box;
       margin-bottom: 10px;
       min-height: 10px;
-      overflow: hidden;
-      padding-bottom: 5px;
+    /*overflow: hidden;*/
       word-wrap: break-word;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .msgbox {
       color: #fff;
       cursor: default;
       font: normal bold 16px 'arial';
-      margin: 5px 0 10px 0;
       padding: 0 10px;
     }
     .trashbtn {
       cursor: pointer;
-      float: left;
-      margin: 0 0 0 10px;
+      display: none;
+      margin: 5px 0 5px 10px;
       height: 12px;
     }
     .savebtn {
       background-color: #4CAF50;
       cursor: pointer;
-      float: right;
-      margin: 0 0 5px 5px;
+    /*float: right;
+      margin: 0 0 0 auto;*/
       padding: 5px;
       text-align: center;
       height: 24px;
@@ -88,6 +95,18 @@
     .saveicon {
       height: 14px;
       margin: 0 10px;
+    }
+    #peericon  {
+      height: 14px;
+      margin: 0 10px 0 0;
+    }
+    #suppliedicon {
+      height: 14px;
+      margin: 0 10px;
+    }
+    .typeicon {
+      height: 14px;
+      margin-left: 5px;
     }
     #dump {
       background-color: gold;

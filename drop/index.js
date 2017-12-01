@@ -8,7 +8,6 @@ var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
 var filegroup = require('./filepaths-group/index')
-// var ops = require('pojo-ops')
 
 function noop () {}
 
@@ -27,17 +26,15 @@ function peerExit (peer, username) {
 }
 
 function exitHandler (e) {
-  console.log('unbeforeunload event', e)
-  console.log('shutting down...')
   if (!logs || !swarm) return
   if (e) e.preventDefault()
   logs.append(JSON.stringify({ username: me, exit: true }), function (err) {
-    if (err) return callback(err) // pass thru to user !!!
+    if (err) return console.error(err) // pass thru to user !??
     setTimeout(function () {
       swarm.leave(team)
       swarm.close(function () {
         memdown.clearGlobalStore(true)
-        if (e && e.type && e.type === 'unbeforeunload') window.close()
+        if (e) window.close()
       })
     }, 100)
   })
@@ -109,7 +106,7 @@ function infoHandler (info) {
     return console.error(err)
   }
   if (doc.exit) return peerExit(info.peer, doc.username)
-  trap.getBoard().appendChild(trap.makeFilebox(/*info.peer, info.seq, */doc))
+  trap.getBoard().appendChild(trap.makeFilebox(doc))
   trap.requestSuppliedCount()
   notify('New share!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
@@ -127,7 +124,7 @@ function saveHandler (e, doc, iconid) { // TODO: progress bar
 
 ipcRenderer.on('done-consumed', function (e, err, mypath, iconid) {
   var saveicon = document.querySelector('#' + iconid)
-  saveicon.src = './open-iconic/svg/' + (err ? 'warning.svg' : 'check.svg')
+  saveicon.src = './svg/' + (err ? 'warning.svg' : 'check.svg')
   saveicon.title = mypath
   saveicon.style.display = 'inline'
 })
@@ -230,8 +227,8 @@ var trap = { // all-in-1 factory that cooks up dom elements
     var suppliedicon = document.createElement('img')
     this._stats = document.createElement('div')
     this._stats.id = 'stats'
-    peericon.src = './open-iconic/svg/bolt.svg'
-    suppliedicon.src = './open-iconic/svg/arrow-thick-top.svg'
+    peericon.src = './svg/people.svg'
+    suppliedicon.src = './svg/arrow-thick-top.svg'
     peericon.id = 'peericon'
     suppliedicon.id = 'suppliedicon'
     this._stats.appendChild(peericon)
@@ -244,7 +241,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._escaper) return this._escaper
     this._escaper = document.createElement('img')
     this._escaper.id = 'escapebtn'
-    this._escaper.src = './open-iconic/svg/account-logout.svg'
+    this._escaper.src = './svg/account-logout.svg'
     this._escaper.onclick = escapeHandler
     return this._escaper
   },
@@ -278,8 +275,8 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._subhead) return this._subhead
     this._subhead = document.createElement('div')
     this._subhead.id = 'subhead'
-    this._subhead.appendChild(this.getSubName())
     this._subhead.appendChild(this.getSubTeam())
+    this._subhead.appendChild(this.getSubName())
     return this._subhead
   },
   getDump() {
@@ -294,12 +291,11 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._board) return this._board
     this._board = document.createElement('div')
     this._board.id = 'board'
-    this._board.clearAll = (function (username, callback) {
-      if (username) {
-        Array.from(document.querySelectorAll('#board > .' + username))
-          .forEach(function (filebox) {
-            this._board.removeChild(filebox)
-          }, trap)
+    this._board.clearAll = (function (user, callback) {
+      if (user) {
+        document.querySelectorAll('#board > .' + user).forEach(function (box) {
+            this._board.removeChild(box)
+        }, trap)
       } else {
         while (this._board.children.length) {
           this._board.removeChild(this._board.children[0])
@@ -330,7 +326,10 @@ var trap = { // all-in-1 factory that cooks up dom elements
     filebox.isOpen = true
     filebox.onclick = function (e) {
       Array.from(this.children).forEach(function (child) {
-        child.style.display = this.isOpen ? 'none' : 'block'
+        if (child.classList.contains('trashbtn'))
+          child.style.display = this.isOpen ? 'block' : 'none'
+        else
+          child.style.display = this.isOpen ? 'none' : 'block'
       }, this)
       this.isOpen = !this.isOpen
     }
@@ -347,13 +346,14 @@ var trap = { // all-in-1 factory that cooks up dom elements
     filebox.classList.add('filebox')
     filebox.classList.add(doc.username)
     msgbox.classList.add('msgbox')
-    savebtn.src = './open-iconic/svg/data-transfer-download.svg'
+    savebtn.src = './svg/data-transfer-download.svg'
     savebtn.classList.add('savebtn')
-    trashbtn.src = './open-iconic/svg/trash.svg'
+    trashbtn.src = './svg/trash.svg'
     trashbtn.classList.add('trashbtn')
     msg.classList.add('message')
+    typeicon.classList.add('typeicon')
     typeicon.src = doc.type === 'file'
-      ? './open-iconic/svg/file.svg' : './open-iconic/svg/folder.svg'
+      ? './svg/file.svg' : './svg/folder.svg'
     saveicon.id = 'saveicon' + filebox.id
     saveicon.classList.add('saveicon')
     saveicon.style.display = 'none'
@@ -363,9 +363,9 @@ var trap = { // all-in-1 factory that cooks up dom elements
     msg.appendChild(document.createTextNode(' ' + doc.filename))
     msgbox.appendChild(msg)
     msgbox.appendChild(saveicon)
-    filebox.appendChild(savebtn)
     filebox.appendChild(msgbox)
     filebox.appendChild(trashbtn)
+    filebox.appendChild(savebtn)
     return filebox
   },
   requestSuppliedCount() {
@@ -382,7 +382,3 @@ ipcRenderer.on('supplied-count', function (e, supplied) {
 
 window.onload = initView
 window.onbeforeunload = exitHandler
-
-// process.on('exit', function () {
-//   swarm.close()
-// })
