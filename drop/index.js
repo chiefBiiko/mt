@@ -101,8 +101,8 @@ function connectionHandler (socket, peer) { // TODO: pump
 
 function infoHandler (info) {
   var doc
-  peers[info.peer]
-    ? peers[info.peer].push(info.seq) : peers[info.peer] = [ info.seq ]
+  if (peers[info.peer]) peers[info.peer].push(info.seq)
+  else peers[info.peer] = [ info.seq ]
   try {
     doc = JSON.parse(info.entry.toString())
   } catch (err) {
@@ -323,6 +323,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     var filebox = document.createElement('div')
     var msgbox = document.createElement('div')
     var msg = document.createElement('span')
+    var typeicon = document.createElement('img')
     var savebtn = document.createElement('img')
     var trashbtn = document.createElement('img')
     var saveicon = document.createElement('img')
@@ -351,12 +352,15 @@ var trap = { // all-in-1 factory that cooks up dom elements
     trashbtn.src = './open-iconic/svg/trash.svg'
     trashbtn.classList.add('trashbtn')
     msg.classList.add('message')
+    typeicon.src = doc.type === 'file'
+      ? './open-iconic/svg/file.svg' : './open-iconic/svg/folder.svg'
     saveicon.id = 'saveicon' + filebox.id
     saveicon.classList.add('saveicon')
     saveicon.style.display = 'none'
     filebox.title = doc.username + ': ' + doc.filename
-    msg.innerText =
-      doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
+    msg.appendChild(document.createTextNode(doc.username + ' is sharing '))
+    msg.appendChild(typeicon)
+    msg.appendChild(document.createTextNode(' ' + doc.filename))
     msgbox.appendChild(msg)
     msgbox.appendChild(saveicon)
     filebox.appendChild(savebtn)
