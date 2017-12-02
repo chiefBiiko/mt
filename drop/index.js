@@ -369,7 +369,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     filebox.title = trashlabel.innerText = doc.username + ': ' + doc.filename
     msg.appendChild(document.createTextNode(doc.username + ' is sharing '))
     msg.appendChild(typeicon)
-    msg.appendChild(document.createTextNode(' ' + shortify(doc.filename, 19)))
+    msg.appendChild(document.createTextNode(' ' + doc.filename))
     msgbox.appendChild(msg)
     msgbox.appendChild(saveicon)
     filebox.appendChild(msgbox)

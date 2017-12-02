@@ -6,6 +6,10 @@
     html { font: normal normal 16px 'arial'; }
     body {
       background-image: url('./img/young_stars.jpg');
+      background-size: cover;
+    }
+    #login {
+
     }
     #loginbtn, .textinput {
       box-sizing: border-box;
@@ -66,6 +70,7 @@
       margin-bottom: 10px;
       min-height: 10px;
     /*overflow: hidden;*/
+      padding: 10px;
       word-wrap: break-word;
       display: flex;
       align-items: center;
@@ -75,28 +80,32 @@
       color: #fff;
       cursor: default;
       font: normal bold 16px 'arial';
-      padding: 0 10px;
+      overflow: hidden;
+    }
+    .message {
+      word-wrap: break-word;
     }
     .trashbtn {
       cursor: pointer;
       display: none;
-      margin: 0 0 0 10px;
-      height: 12px;
+      margin-right: 10px;
+      min-height: 12px;
     }
     .trashlabel {
       color: #fff;
       cursor: default;
       display: none;
-      margin: 0 10px 0 0;
     }
     .savebtn {
+      align-self: flex-start;
       background-color: #4CAF50;
       cursor: pointer;
     /*float: right;
       margin: 0 0 0 auto;*/
+      margin-left: 10px;
       padding: 5px;
       text-align: center;
-      height: 24px;
+      min-height: 24px;
     }
     .savebtn:hover {
       background-color: #3e8e41;
@@ -136,6 +145,9 @@
     @media only screen and (max-width: 370px) {
       #dump {
         font: normal bold 36px 'arial';
+      }
+      .trashlabel {
+        display: none;
       }
     }
   </style>
