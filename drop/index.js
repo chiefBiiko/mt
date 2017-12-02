@@ -15,6 +15,11 @@ function notify (title, data) {
   return new Notification(title, data)
 }
 
+function shortify (stryng, max) {
+  max = max || 10
+  return stryng.length > max ? stryng.substring(0, max - 3) + '...' : stryng
+}
+
 var me, team, myport, plugport, swarm, logs, view
 var peers = {}
 
@@ -124,7 +129,7 @@ function saveHandler (e, doc, iconid) { // TODO: progress bar
 
 ipcRenderer.on('done-consumed', function (e, err, mypath, iconid) {
   var saveicon = document.querySelector('#' + iconid)
-  saveicon.src = './svg/' + (err ? 'warning.svg' : 'check.svg')
+  saveicon.src = './img/' + (err ? 'warning.svg' : 'check.svg')
   saveicon.title = mypath
   saveicon.style.display = 'inline'
 })
@@ -227,8 +232,8 @@ var trap = { // all-in-1 factory that cooks up dom elements
     var suppliedicon = document.createElement('img')
     this._stats = document.createElement('div')
     this._stats.id = 'stats'
-    peericon.src = './svg/people.svg'
-    suppliedicon.src = './svg/arrow-thick-top.svg'
+    peericon.src = './img/people.svg'
+    suppliedicon.src = './img/arrow-thick-top.svg'
     peericon.id = 'peericon'
     suppliedicon.id = 'suppliedicon'
     this._stats.appendChild(peericon)
@@ -241,7 +246,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._escaper) return this._escaper
     this._escaper = document.createElement('img')
     this._escaper.id = 'escapebtn'
-    this._escaper.src = './svg/account-logout.svg'
+    this._escaper.src = './img/account-logout.svg'
     this._escaper.onclick = escapeHandler
     return this._escaper
   },
@@ -283,7 +288,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._dump) return this._dump
     this._dump = document.createElement('div')
     this._dump.id = 'dump'
-    this._dump.innerText = 'drag and drop\nfiles and dirs'
+    this._dump.innerText = 'drag drop'
     dragDrop(this._dump, dropHandler)
     return this._dump
   },
@@ -323,13 +328,16 @@ var trap = { // all-in-1 factory that cooks up dom elements
     var savebtn = document.createElement('img')
     var trashbtn = document.createElement('img')
     var saveicon = document.createElement('img')
+    var trashlabel = document.createElement('span')
     filebox.isOpen = true
     filebox.onclick = function (e) {
       Array.from(this.children).forEach(function (child) {
-        if (child.classList.contains('trashbtn'))
+        if (child.classList.contains('trashbtn') ||
+            child.classList.contains('trashlabel')) {
           child.style.display = this.isOpen ? 'block' : 'none'
-        else
+        } else {
           child.style.display = this.isOpen ? 'none' : 'block'
+        }
       }, this)
       this.isOpen = !this.isOpen
     }
@@ -346,25 +354,27 @@ var trap = { // all-in-1 factory that cooks up dom elements
     filebox.classList.add('filebox')
     filebox.classList.add(doc.username)
     msgbox.classList.add('msgbox')
-    savebtn.src = './svg/data-transfer-download.svg'
+    savebtn.src = './img/data-transfer-download.svg'
     savebtn.classList.add('savebtn')
-    trashbtn.src = './svg/trash.svg'
+    trashbtn.src = './img/trash.svg'
     trashbtn.classList.add('trashbtn')
+    trashlabel.classList.add('trashlabel')
     msg.classList.add('message')
     typeicon.classList.add('typeicon')
     typeicon.src = doc.type === 'file'
-      ? './svg/file.svg' : './svg/folder.svg'
+      ? './img/file.svg' : './img/folder.svg'
     saveicon.id = 'saveicon' + filebox.id
     saveicon.classList.add('saveicon')
     saveicon.style.display = 'none'
-    filebox.title = doc.username + ': ' + doc.filename
+    filebox.title = trashlabel.innerText = doc.username + ': ' + doc.filename
     msg.appendChild(document.createTextNode(doc.username + ' is sharing '))
     msg.appendChild(typeicon)
-    msg.appendChild(document.createTextNode(' ' + doc.filename))
+    msg.appendChild(document.createTextNode(' ' + shortify(doc.filename, 19)))
     msgbox.appendChild(msg)
     msgbox.appendChild(saveicon)
     filebox.appendChild(msgbox)
     filebox.appendChild(trashbtn)
+    filebox.appendChild(trashlabel)
     filebox.appendChild(savebtn)
     return filebox
   },

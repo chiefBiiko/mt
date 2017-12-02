@@ -4,6 +4,9 @@
   <meta charset='utf-8'>
   <style>
     html { font: normal normal 16px 'arial'; }
+    body {
+      background-image: url('./img/young_stars.jpg');
+    }
     #loginbtn, .textinput {
       box-sizing: border-box;
       height: 25px;
@@ -77,8 +80,14 @@
     .trashbtn {
       cursor: pointer;
       display: none;
-      margin: 5px 0 5px 10px;
+      margin: 0 0 0 10px;
       height: 12px;
+    }
+    .trashlabel {
+      color: #fff;
+      cursor: default;
+      display: none;
+      margin: 0 10px 0 0;
     }
     .savebtn {
       background-color: #4CAF50;
@@ -112,7 +121,7 @@
       background-color: gold;
       color: #fff;
       cursor: default;
-      font: normal bold 32px 'arial';
+      font: normal bold 48px 'arial';
       height: 100px;
       margin-bottom: 10px;
       padding: 5px;
@@ -124,9 +133,9 @@
     #board {
       height: 100px;
     }
-    @media only screen and (max-width: 255px) {
+    @media only screen and (max-width: 370px) {
       #dump {
-        font: normal bold 22px 'arial';
+        font: normal bold 36px 'arial';
       }
     }
   </style>

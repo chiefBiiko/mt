@@ -7,7 +7,7 @@ var plug = fsPlug()
 var mw
 
 electron.app.on('ready', function () {
-  mw = new electron.BrowserWindow({ width: 800, height: 400 })
+  mw = new electron.BrowserWindow({ width: 800, height: 800 })
   mw.loadURL('file://' + __dirname + '/index.html')
   mw.openDevTools()
 })
