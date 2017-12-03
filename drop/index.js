@@ -51,6 +51,7 @@ function initView () {
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
   trap.getLoginNameInput().focus()
+  dragDrop(document.body, dropHandler)
 }
 
 function loginHandler (e) {
@@ -292,7 +293,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._dump = document.createElement('div')
     this._dump.id = 'dump'
     this._dump.innerText = 'drag drop'
-    dragDrop(this._dump, dropHandler)
+  //dragDrop(this._dump, dropHandler)
     return this._dump
   },
   getBoard() {

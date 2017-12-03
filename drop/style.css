@@ -79,7 +79,7 @@ body {
 .filebox {
 /*background-color: #83c985;
   border: 2px solid #4CAF50;*/
-  border: 2px solid #fff;
+  border: 1px solid #fff;
 /*box-sizing: padding-box;*/
   margin-bottom: 10px;
 /*min-height: 10px;*/
@@ -154,12 +154,12 @@ body {
 
 #dump {
 /*background-color: gold;*/
-  border: 2px solid #fff;
+/*border: 2px solid #fff;*/
 /*color: #fff;*/
   cursor: default;
-  font: normal bold 64px 'arial';
-  min-height: 100px;
-  margin-bottom: 10px;
+  font: normal bold 40px 'arial';
+  flex-shrink: 0;
+  margin-bottom: 20px;
   padding: 5px;
   text-align: center;
   display: flex;
@@ -176,11 +176,10 @@ body {
 }
 
 #board {
-
 /*flex: 2;
   overflow: auto;
   make this stretch to bottom of viewport*/
-  border: 2px dotted #fff;
+/*border: 2px dotted #fff;*/
   flex-grow: 1;
   margin-bottom: 10px;
   overflow-y: scroll;
@@ -188,11 +187,11 @@ body {
 
 }
 
-@media only screen and (max-width: 369px) {
-  #dump {
-    font: normal bold 40px 'arial';
-  }
-  .trashlabel {
-    font-size: 14px;
-  }
+@media only screen and (min-width: 300px) {
+  #dump { font: normal bold 56px 'arial'; }
+}
+
+@media only screen and (min-width: 370px) {
+  #dump { font: normal bold 64px 'arial'; }
+  .trashlabel { font-size: 14px; }
 }
