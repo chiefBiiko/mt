@@ -50,6 +50,7 @@ function initView () {
   view.id = 'view'
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
+  trap.getLoginNameInput().focus()
 }
 
 function loginHandler (e) {
@@ -135,15 +136,17 @@ ipcRenderer.on('done-consumed', function (e, err, mypath, iconid) {
 })
 
 function escapeHandler () {
+  var team = trap.getLoginTeamInput()
   var loginbtn = trap.getLoginButton()
   exitHandler()
-  trap.getLoginTeamInput().value = ''
+  team.value = ''
   loginbtn.disabled = true
   loginbtn.style.cursor = 'not-allowed'
   loginbtn.style.color = '#999'
   trap.getBoard().clearAll()
   view.removeChild(trap.getMain())
   view.appendChild(trap.getLogin())
+  team.focus()
 }
 
 var trap = { // all-in-1 factory that cooks up dom elements
