@@ -6,20 +6,21 @@ html {
 body {
   background-image: url('./img/young_stars.jpg');
   background-size: cover;
-  display: flex;
-  flex-flow: column;
+  margin: 0 10px;
 }
 
 #login {
+  display: flex;
+  flex-direction: column;
 
 }
 
 #loginbtn, .textinput {
   box-sizing: border-box;
-  height: 25px;
+  min-height: 25px;
   margin: 5px 0;
   padding: 0 5px;
-  width: 100%;
+/*width: 100%;*/
 }
 
 #loginbtn {
@@ -31,13 +32,16 @@ body {
 
 #head {
   display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
+  margin-top: 5px;
 /*overflow: hidden;*/
 }
 
 #subhead {
 /*background-color: purple;*/
 /*color: #fff;*/
+  flex-shrink: 0;
   font: normal bold 16px 'arial';
   margin-bottom: 10px;
 /*overflow: hidden;*/
@@ -153,7 +157,7 @@ body {
 /*color: #fff;*/
   cursor: default;
   font: normal bold 64px 'arial';
-  height: 100px;
+  min-height: 100px;
   margin-bottom: 10px;
   padding: 5px;
   text-align: center;
@@ -165,14 +169,21 @@ body {
 #main {
   /*display: flex;
   flex-direction: column;*/
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 #board {
+
 /*flex: 2;
   overflow: auto;
-  make this stretch to bottom of viewport
+  make this stretch to bottom of viewport*/
   border: 2px dotted #fff;
-  height: 100px;*/
+  flex-grow: 1;
+  margin-bottom: 10px;
+  overflow-y: scroll;
+/*height: 100px;*/
 
 }
 
