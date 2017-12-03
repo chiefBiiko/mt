@@ -1,0 +1,186 @@
+html {
+  color: #fff;
+  font: normal normal 16px 'arial';
+}
+
+body {
+  background-image: url('./img/young_stars.jpg');
+  background-size: cover;
+  display: flex;
+  flex-flow: column;
+}
+
+#login {
+
+}
+
+#loginbtn, .textinput {
+  box-sizing: border-box;
+  height: 25px;
+  margin: 5px 0;
+  padding: 0 5px;
+  width: 100%;
+}
+
+#loginbtn {
+  background-color: #fff;
+  color: #999;
+  font: normal bold 16px 'arial';
+  text-align: right;
+}
+
+#head {
+  display: flex;
+  justify-content: space-between;
+/*overflow: hidden;*/
+}
+
+#subhead {
+/*background-color: purple;*/
+/*color: #fff;*/
+  font: normal bold 16px 'arial';
+  margin-bottom: 10px;
+/*overflow: hidden;*/
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+#subname {
+/*float: right;*/
+}
+
+#stats {
+/*background-color: #0099cc;*/
+/*color: #fff;*/
+  cursor: default;
+/*display: inline-block;*/
+/*float: right;*/
+  margin-bottom: 10px;
+  text-align: right;
+  padding: 5px 0 5px 10px;
+}
+
+#escapebtn {
+/*background-color: #f21c0d;*/
+/*border: 1px solid #fff;*/
+  cursor: pointer;
+  margin: 0 0 10px 0;
+  padding: 7px 5px 5px 0;
+  height: 16px;
+  width: 16px;
+}
+
+.filebox {
+/*background-color: #83c985;
+  border: 2px solid #4CAF50;*/
+  border: 2px solid #fff;
+/*box-sizing: padding-box;*/
+  margin-bottom: 10px;
+/*min-height: 10px;*/
+/*overflow: hidden;*/
+  padding: 10px;
+  word-wrap: break-word;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.msgbox {
+/*color: #fff;*/
+  cursor: default;
+  font: normal bold 16px 'arial';
+  overflow: hidden;
+}
+
+.message {
+  word-wrap: break-word;
+}
+
+.trashbtn {
+  cursor: pointer;
+  display: none;
+  margin-right: 10px;
+  min-height: 12px;
+}
+
+.trashlabel {
+/*color: #fff;*/
+  cursor: default;
+  display: none;
+}
+
+.savebtn {
+/*align-self: flex-start;
+  background-color: #4CAF50;*/
+  border: 1px solid #fff;
+  cursor: pointer;
+/*float: right;
+  margin: 0 0 0 auto;*/
+  margin-left: 10px;
+  padding: 5px;
+/*text-align: center;*/
+  min-height: 24px;
+}
+
+.savebtn:hover {
+  background-color: rgba(0,0,0,.5);
+}
+
+.saveicon {
+  height: 14px;
+  margin: 0 10px;
+}
+
+#peericon  {
+  height: 14px;
+  margin: 0 5px 0 0;
+}
+
+#suppliedicon {
+  height: 14px;
+  margin: 0 2px 0 10px;
+}
+
+.typeicon {
+  height: 14px;
+  margin-left: 5px;
+}
+
+#dump {
+/*background-color: gold;*/
+  border: 2px solid #fff;
+/*color: #fff;*/
+  cursor: default;
+  font: normal bold 64px 'arial';
+  height: 100px;
+  margin-bottom: 10px;
+  padding: 5px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#main {
+  /*display: flex;
+  flex-direction: column;*/
+}
+
+#board {
+/*flex: 2;
+  overflow: auto;
+  make this stretch to bottom of viewport*/
+  border: 2px dotted #fff;
+  height: 100px;*/
+
+}
+
+@media only screen and (max-width: 369px) {
+  #dump {
+    font: normal bold 40px 'arial';
+  }
+  .trashlabel {
+    font-size: 14px;
+  }
+}

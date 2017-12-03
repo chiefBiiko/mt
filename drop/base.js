@@ -7,9 +7,9 @@ var plug = fsPlug()
 var mw
 
 electron.app.on('ready', function () {
-  mw = new electron.BrowserWindow({ width: 800, height: 800 })
+  mw = new electron.BrowserWindow({ width: 400, height: 500 })
   mw.loadURL('file://' + __dirname + '/index.html')
-  mw.openDevTools()
+//mw.openDevTools()
 })
 
 ipcMain.on('plug-listen', function plugListenHandler (e, plugport) {

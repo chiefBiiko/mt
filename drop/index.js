@@ -350,7 +350,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
       trap.getBoard().removeChild(this.parentNode)
     }
     filebox.id =
-      (doc.username + doc.filename + doc.timestamp).replace(/\./g, '')
+      (doc.username + doc.filename + doc.timestamp).replace(/[\.\s#]/g, '')
     filebox.classList.add('filebox')
     filebox.classList.add(doc.username)
     msgbox.classList.add('msgbox')
