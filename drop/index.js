@@ -155,6 +155,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
   _name: null,
   _team: null,
   _join: null,
+  _logintitle: null,
   _peercount: null,
   _suppliedcount: null,
   _stats: null,
@@ -200,11 +201,19 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._join.onclick = loginHandler
     return this._join
   },
+  getLoginTitle() {
+    if (this._logintitle) return this._logintitle
+    this._logintitle = document.createElement('span')
+    this._logintitle.id ='logintitle'
+    this._logintitle.innerText = 'drag drop'
+    return this._logintitle
+  },
   getLogin() {
     if (this._login) return this._login
     this._login = document.createElement('div')
     this._login.id = 'login'
     this._login.onkeyup = this._validator.bind(this)
+    this._login.appendChild(this.getLoginTitle())
     this._login.appendChild(this.getLoginNameInput())
     this._login.appendChild(this.getLoginTeamInput())
     this._login.appendChild(this.getLoginButton())

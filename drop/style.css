@@ -159,12 +159,18 @@ body {
   cursor: default;
   font: normal bold 40px 'arial';
   flex-shrink: 0;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   padding: 5px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+#logintitle {
+  cursor: default;
+  font: normal bold 40px 'arial';
+  padding: auto;
 }
 
 #main {
@@ -182,7 +188,7 @@ body {
 /*border: 2px dotted #fff;*/
   flex-grow: 1;
   margin-bottom: 10px;
-  overflow-y: scroll;
+  overflow-y: auto;
 /*height: 100px;*/
 
 }
