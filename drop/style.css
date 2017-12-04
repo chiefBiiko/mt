@@ -10,9 +10,10 @@ body {
 }
 
 #login {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 80vh;
   justify-content: center;
 }
 
@@ -21,6 +22,7 @@ body {
   min-height: 25px;
   margin: 5px 0;
   padding: 0 5px;
+  width: 80vw;
 /*width: 100%;*/
 }
 
@@ -170,7 +172,9 @@ body {
 #logintitle {
   cursor: default;
   font: normal bold 40px 'arial';
-  padding: auto;
+  margin-bottom: 30px;
+  padding: 5px;
+  text-align: center;
 }
 
 #main {
@@ -194,10 +198,10 @@ body {
 }
 
 @media only screen and (min-width: 300px) {
-  #dump { font: normal bold 56px 'arial'; }
+  #dump, #logintitle { font: normal bold 56px 'arial'; }
 }
 
 @media only screen and (min-width: 370px) {
-  #dump { font: normal bold 64px 'arial'; }
+  #dump, #logintitle { font: normal bold 64px 'arial'; }
   .trashlabel { font-size: 14px; }
 }

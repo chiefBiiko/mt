@@ -20,7 +20,7 @@ function shortify (stryng, max) {
   return stryng.length > max ? stryng.substring(0, max - 3) + '...' : stryng
 }
 
-var me, team, myport, plugport, swarm, logs, view
+var me, team, myport, plugport, swarm, logs, view, removeDragDrop
 var peers = {}
 
 function peerExit (peer, username) {
@@ -51,7 +51,7 @@ function initView () {
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
   trap.getLoginNameInput().focus()
-  dragDrop(document.body, dropHandler)
+  // dragDrop(document.body, dropHandler)
 }
 
 function loginHandler (e) {
@@ -73,6 +73,7 @@ function loginHandler (e) {
   trap.getSubName().set(me)
   view.removeChild(trap.getLogin())
   view.appendChild(trap.getMain())
+  removeDragDrop = dragDrop(document.body, dropHandler)
 }
 
 function dropHandler (files) {
@@ -139,6 +140,7 @@ ipcRenderer.on('done-consumed', function (e, err, mypath, iconid) {
 function escapeHandler () {
   var team = trap.getLoginTeamInput()
   var loginbtn = trap.getLoginButton()
+  removeDragDrop()
   exitHandler()
   team.value = ''
   loginbtn.disabled = true
@@ -173,7 +175,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     })
     this._join.disabled = !valid
     this._join.style.cursor = valid ? 'pointer' : 'not-allowed'
-    this._join.style.color = valid ? 'gold' : '#999'
+    this._join.style.color = valid ? 'firebrick' : '#999'
     if (valid && e.keyCode === 13) loginHandler(e)
   },
   getLoginNameInput() {
