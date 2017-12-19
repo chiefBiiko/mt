@@ -15,10 +15,10 @@ function notify (title, data) {
   return new Notification(title, data)
 }
 
-function shortify (stryng, max) {
-  max = max || 10
-  return stryng.length > max ? stryng.substring(0, max - 3) + '...' : stryng
-}
+//function shortify (stryng, max) {
+//  max = max || 10
+//  return stryng.length > max ? stryng.substring(0, max - 3) + '...' : stryng
+//}
 
 var me, team, myport, plugport, swarm, logs, view, removeDragDrop
 var peers = {}
