@@ -7,7 +7,7 @@ var ipcRenderer = require('electron').ipcRenderer
 var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
-var filegroup = require('./filepaths-group/index')
+var filegroup = require('filepaths-group')
 
 function noop () {}
 
@@ -68,7 +68,7 @@ function loginHandler (e) {
   swarm.listen(myport)
   swarm.join(team, { announce: true })
   document.onmouseenter = document.onmouseleave =
-    trap.requestSuppliedCount.bind(trap)
+    trap.updateStats.bind(trap)//requestSuppliedCount.bind(trap)
   trap.getSubTeam().set(team)
   trap.getSubName().set(me)
   view.removeChild(trap.getLogin())
@@ -100,7 +100,7 @@ function connectionHandler (socket, peer) { // TODO: pump
   socket.pipe(
     logs.createReplicationStream({ live: true, mode: 'sync' })
   ).pipe(socket)
-  trap.updatePeerCount()
+  trap.updateStats()//updatePeerCount()
   notify('New peer!', { body: '@ ' + peer.host + ':' + peer.port })
 }
 
@@ -115,13 +115,13 @@ function infoHandler (info) {
   }
   if (doc.exit) return peerExit(info.peer, doc.username)
   trap.getBoard().appendChild(trap.makeFilebox(doc))
-  trap.requestSuppliedCount()
+  trap.updateStats()//requestSuppliedCount()
   notify('New share!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
   })
 }
 
-function saveHandler (e, doc, iconid) { // TODO: progress bar
+function saveHandler (e, doc, iconid) { 
   dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
     if (!as) return
     ipcRenderer.send('plug-consume',
@@ -207,7 +207,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     if (this._logintitle) return this._logintitle
     this._logintitle = document.createElement('span')
     this._logintitle.id ='logintitle'
-    this._logintitle.innerText = 'drag drop'
+    this._logintitle.innerText = 'dumpify'
     return this._logintitle
   },
   getLogin() {
@@ -398,6 +398,10 @@ var trap = { // all-in-1 factory that cooks up dom elements
   },
   updatePeerCount() {
     this.getPeerCount().update()
+  },
+  updateStats() {
+    this.requestSuppliedCount()
+    this.updatePeerCount()
   }
 }
 

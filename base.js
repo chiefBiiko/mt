@@ -1,9 +1,9 @@
 var electron = require('electron')
 var ipcMain = require('electron').ipcMain
 var local = require('my-local-ip')
-var fsPlug = require('./fs-plug/index')
+var fsPlug = require('fs-plug')
 
-var plug = fsPlug()
+var plug = fsPlug({ strict: false })
 var mw
 
 electron.app.on('ready', function () {

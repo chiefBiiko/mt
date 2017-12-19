@@ -1,5 +1,5 @@
 {
-  "name": "drop",
+  "name": "dumpify",
   "version": "0.0.1",
   "description": "drop share files within a local network",
   "main": "base.js",
@@ -14,12 +14,14 @@
     "discovery-swarm": "^4.4.2",
     "drag-drop": "^2.13.2",
     "electron": "^1.8.1",
+    "filepaths-group": "0.0.1",
+    "fs-plug": "0.0.1",
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
     "my-local-ip": "^1.0.0",
     "pump": "^1.0.3",
-    "scuttleup-blacklist": "^3.4.0",
+    "scuttleup-blacklist": "^3.4.3",
     "tar-fs": "^1.16.0"
   },
   "devDependencies": {
