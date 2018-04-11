@@ -20,11 +20,13 @@
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
     "my-local-ip": "^1.0.0",
+    "pojo-ops": "^0.4.2",
     "pump": "^1.0.3",
     "scuttleup-blacklist": "^3.4.3",
     "tar-fs": "^1.16.0"
   },
   "devDependencies": {
+    "debug": "^3.1.0",
     "standard": "^10.0.3"
   },
   "standard": {

@@ -7,18 +7,31 @@ var ipcRenderer = require('electron').ipcRenderer
 var levelup = require('levelup')
 var memdown = require('memdown')
 var scuttleup = require('scuttleup-blacklist')
-var filegroup = require('filepaths-group')
+// var filegroup = require('filepaths-group')
+var pojo = require('pojo-ops')
+var path = require('path')
+
+// TODO: centralized error handling
+
+// send func group to its filepaths-group exile
+function group (files) { // assuming: [{a:1,path:'...'},...]
+  return files
+    .map(function (file) {
+      file.dir = path.dirname(file.path)
+      return file
+    })
+    .reduce(function (acc, cur) {
+      if (!acc.hasOwnProperty(cur.dir)) acc[cur.dir] = [ cur ]
+      else acc[cur.dir].push(cur)
+      return acc
+    }, {})
+}
 
 function noop () {}
 
 function notify (title, data) {
   return new Notification(title, data)
 }
-
-//function shortify (stryng, max) {
-//  max = max || 10
-//  return stryng.length > max ? stryng.substring(0, max - 3) + '...' : stryng
-//}
 
 var me, team, myport, plugport, swarm, logs, view, removeDragDrop
 var peers = {}
@@ -51,7 +64,6 @@ function initView () {
   view.appendChild(trap.getLogin())
   document.body.appendChild(view)
   trap.getLoginNameInput().focus()
-  // dragDrop(document.body, dropHandler)
 }
 
 function loginHandler (e) {
@@ -67,8 +79,7 @@ function loginHandler (e) {
   logs.createReadStream({ live: true }).on('data', infoHandler)
   swarm.listen(myport)
   swarm.join(team, { announce: true })
-  document.onmouseenter = document.onmouseleave =
-    trap.updateStats.bind(trap)//requestSuppliedCount.bind(trap)
+  document.onmouseenter = document.onmouseleave = trap.updateStats.bind(trap)
   trap.getSubTeam().set(team)
   trap.getSubName().set(me)
   view.removeChild(trap.getLogin())
@@ -77,21 +88,35 @@ function loginHandler (e) {
 }
 
 function dropHandler (files) {
-  filegroup(files, { size: true }, function (err, groups) {
-    if (err) return console.error(err) // pass thru to user!
-    var localhost = local()
-    groups.forEach(function (item) {
+  var localhost = local()
+  pojo.forEach(group(files), function (val, key) {
+    if (val.length === 1) { // case file
       logs.append(JSON.stringify({
         username: me,
-        filename: item.path.replace(/^.+(\/|\\)(.+)$/, '$2'),
-        type: item.type,
-        filepath: item.path,
-        size: item.size,
+        filename: path.basename(val[0].path),
+        type: 'file',
+        filepath: val[0].path,
+        size: 419,
         host: localhost,
         port: plugport,
-        timestamp: new Date().getTime()
+        timestamp: new Date().getTime('UTC')
       }))
-    })
+    } else { // case directory
+      var entries = val.map(function (file) {
+        return file.path
+      })
+      logs.append(JSON.stringify({
+        username: me,
+        filename: path.basename(key),
+        type: 'directory',
+        filepath: key,
+        only: entries,
+        size: 419,
+        host: localhost,
+        port: plugport,
+        timestamp: new Date().getTime('UTC')
+      }))
+    }
   })
   trap.requestSuppliedCount()
 }
@@ -115,25 +140,31 @@ function infoHandler (info) {
   }
   if (doc.exit) return peerExit(info.peer, doc.username)
   trap.getBoard().appendChild(trap.makeFilebox(doc))
-  trap.updateStats()//requestSuppliedCount()
+  trap.updateStats()
   notify('New share!', {
     body: doc.username + ' is sharing ' + doc.type + ' ' + doc.filename
   })
 }
 
-function saveHandler (e, doc, iconid) { 
-  dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (as) {
-    if (!as) return
-    ipcRenderer.send('plug-consume',
-      doc.port, doc.host, doc.type, doc.filepath, as, doc.size, iconid
-    )
+function saveHandler (e, doc, iconid) {
+  dialog.showSaveDialog({ title: 'Save ' + doc.filename }, function (alias) {
+    if (!alias) return
+    var conf = {
+      port: doc.port,
+      host: doc.host,
+      type: doc.type,
+      remotePath: doc.filepath,
+      localPath: alias,
+      only: doc.only || null
+    }
+    ipcRenderer.send('plug-consume', conf, doc.size || 419, iconid)
   })
 }
 
-ipcRenderer.on('done-consumed', function (e, err, mypath, iconid) {
+ipcRenderer.on('plug-consumed', function (e, err, localPath, iconid) {
   var saveicon = document.querySelector('#' + iconid)
   saveicon.src = './img/' + (err ? 'warning.svg' : 'check.svg')
-  saveicon.title = mypath
+  saveicon.title = localPath
   saveicon.style.display = 'inline'
 })
 
@@ -152,7 +183,7 @@ function escapeHandler () {
   team.focus()
 }
 
-var trap = { // all-in-1 factory that cooks up dom elements
+var trap = { // all-in-1 factory that whips up dom elements
   _login: null,
   _name: null,
   _team: null,
@@ -304,7 +335,6 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._dump = document.createElement('div')
     this._dump.id = 'dump'
     this._dump.innerText = 'drag drop'
-  //dragDrop(this._dump, dropHandler)
     return this._dump
   },
   getBoard() {
@@ -314,7 +344,7 @@ var trap = { // all-in-1 factory that cooks up dom elements
     this._board.clearAll = (function (user, callback) {
       if (user) {
         document.querySelectorAll('#board > .' + user).forEach(function (box) {
-            this._board.removeChild(box)
+          this._board.removeChild(box)
         }, trap)
       } else {
         while (this._board.children.length) {

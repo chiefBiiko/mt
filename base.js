@@ -1,7 +1,8 @@
 var electron = require('electron')
 var ipcMain = require('electron').ipcMain
 var local = require('my-local-ip')
-var fsPlug = require('fs-plug')
+// var fsPlug = require('fs-plug')
+var fsPlug = require('./../bs-plug')
 
 var plug = fsPlug({ strict: false })
 var mw
@@ -24,14 +25,13 @@ ipcMain.on('supply-count', function (e, _) {
   e.sender.send('supplied-count', plug.supplied)
 })
 
-ipcMain.on('plug-consume',
-           function (e, port, host, type, filepath, mypath, size, id) {
-  plug.consume(port, host, type, filepath, mypath, function (err, mypath) {
+ipcMain.on('plug-consume', function (e, conf, size, iconid) {
+  plug.consume(conf, function (err, localPath) {
     mw.setProgressBar(-1)
-    e.sender.send('done-consumed', err, mypath, id)
+    e.sender.send('plug-consumed', err, localPath, iconid)
   })
   plug.on('bytes-consumed', function (bytes) {
-    mw.setProgressBar(bytes / size)
+    mw.setProgressBar(0.419) // bytes / size
   })
 })
 
