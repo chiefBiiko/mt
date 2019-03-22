@@ -5,7 +5,8 @@
   "main": "base.js",
   "scripts": {
     "start": "./node_modules/.bin/electron ./base.js",
-    "style": "./node_modules/.bin/standard --fix",
+    "fmt": "./node_modules/.bin/standard --fix",
+    "dist": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Noah Anabiik Schwarz",
@@ -13,9 +14,8 @@
   "dependencies": {
     "discovery-swarm": "^4.4.2",
     "drag-drop": "^2.13.2",
-    "electron": "^1.8.1",
     "filepaths-group": "0.0.1",
-    "fs-plug": "0.0.1",
+    "fs-plug": "0.0.3",
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
@@ -27,6 +27,8 @@
   },
   "devDependencies": {
     "debug": "^3.1.0",
+    "electron": "^1.8.8",
+    "electron-builder": "^20.39.0",
     "standard": "^10.0.3"
   },
   "standard": {

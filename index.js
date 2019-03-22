@@ -206,7 +206,7 @@ var trap = { // all-in-1 factory that whips up dom elements
     })
     this._join.disabled = !valid
     this._join.style.cursor = valid ? 'pointer' : 'not-allowed'
-    this._join.style.color = valid ? 'firebrick' : '#999'
+    this._join.style.color = valid ? '#0099ff' : '#999'
     if (valid && e.keyCode === 13) loginHandler(e)
   },
   getLoginNameInput() {
@@ -246,7 +246,7 @@ var trap = { // all-in-1 factory that whips up dom elements
     this._login = document.createElement('div')
     this._login.id = 'login'
     this._login.onkeyup = this._validator.bind(this)
-    this._login.appendChild(this.getLoginTitle())
+    // this._login.appendChild(this.getLoginTitle())
     this._login.appendChild(this.getLoginNameInput())
     this._login.appendChild(this.getLoginTeamInput())
     this._login.appendChild(this.getLoginButton())
@@ -361,7 +361,7 @@ var trap = { // all-in-1 factory that whips up dom elements
     this._main.id = 'main'
     this._main.appendChild(this.getHead())
     this._main.appendChild(this.getSubHead())
-    this._main.appendChild(this.getDump())
+    // this._main.appendChild(this.getDump())
     this._main.appendChild(this.getBoard())
     return this._main
   },

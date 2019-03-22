@@ -1,11 +1,11 @@
 html {
-  color: #fff;
+  color: #000;
   font: normal normal 16px 'arial';
 }
 
 body {
-  background-image: url('./img/young_stars.jpg');
-  background-size: cover;
+  background-image: url('./img/dumpify_big.png');
+  background-size: contain;
   margin: 0 10px;
 }
 
@@ -54,10 +54,25 @@ body {
 }
 
 #subname {
+  background-color: #fff;
+  box-shadow: 3px 5px #000;
+  border: 2px solid #000;
+  padding: 3px;
 /*float: right;*/
 }
 
+#subteam {
+  background-color: #fff;
+  box-shadow: 3px 5px #000;
+  border: 2px solid #000;
+  padding: 3px;
+}
+
 #stats {
+  background-color: #fff;
+  box-shadow: 3px 5px #000;
+  border: 2px solid #000;
+  padding: 5px 5px 3px 5px;
 /*background-color: #0099cc;*/
 /*color: #fff;*/
   cursor: default;
@@ -65,23 +80,31 @@ body {
 /*float: right;*/
   margin-bottom: 10px;
   text-align: right;
-  padding: 5px 0 5px 10px;
 }
 
 #escapebtn {
+  background-color: #fff;
+  box-shadow: 3px 5px #000;
+  border: 2px solid #000;
 /*background-color: #f21c0d;*/
 /*border: 1px solid #fff;*/
   cursor: pointer;
   margin: 0 0 10px 0;
-  padding: 7px 5px 5px 0;
+  padding: 5px 5px 3px 5px;
   height: 16px;
   width: 16px;
 }
 
+#escapebtn:hover {
+  background-color: rgba(0,0,0,.1);
+}
+
 .filebox {
-/*background-color: #83c985;
-  border: 2px solid #4CAF50;*/
-  border: 1px solid #fff;
+  background-color: #fff;
+/*border: 2px solid #4CAF50;*/
+  /* border: 1px solid #fff; */
+  border: 2px solid #000;
+  padding: 5px 5px 3px 5px;
 /*box-sizing: padding-box;*/
   margin-bottom: 10px;
 /*min-height: 10px;*/
@@ -91,6 +114,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 3px 5px #000;
+  overflow-x: visible !important;
 }
 
 .msgbox {
@@ -131,7 +156,7 @@ body {
 }
 
 .savebtn:hover {
-  background-color: rgba(0,0,0,.5);
+  background-color: rgba(0,0,0,.1);
 }
 
 .saveicon {
@@ -155,6 +180,7 @@ body {
 }
 
 #dump {
+  background-color: #fff;
 /*background-color: gold;*/
 /*border: 2px solid #fff;*/
 /*color: #fff;*/
@@ -192,7 +218,8 @@ body {
 /*border: 2px dotted #fff;*/
   flex-grow: 1;
   margin-bottom: 10px;
-  overflow-y: auto;
+  /* overflow-y: auto; */
+  overflow-x: visible;
 /*height: 100px;*/
 
 }
