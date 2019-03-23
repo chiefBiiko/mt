@@ -31,13 +31,13 @@ var template = [
       {
         label: 'FAQ',
         click() {
-          shell.openExternal(repo + '/README.md#FAQ')
+          shell.openExternal(repo + '/blob/master/README.md#FAQ')
         }
       },
       {
         label: 'Troubleshoot',
         click() {
-          shell.openExternal(repo + '/README.md#Troubleshoot')
+          shell.openExternal(repo + '/blob/master/README.md#Troubleshoot')
         }
       }
     ]
