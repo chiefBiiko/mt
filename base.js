@@ -3,7 +3,7 @@ var ipcMain = require('electron').ipcMain
 var local = require('my-local-ip')
 var fsPlug = require('fs-plug')
 
-var { menu } = require('./menu.js')
+var menu = require('./menu.js')
 
 var plug = fsPlug({ strict: false })
 var mw

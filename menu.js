@@ -27,7 +27,6 @@ var template = [
   {
     role: 'help',
     submenu: [
-      // TODO: add following sections to README
       {
         label: 'FAQ',
         click() {
@@ -68,6 +67,4 @@ if (process.platform === 'darwin') {
   ]
 }
 
-module.exports = {
-  menu: Menu.buildFromTemplate(template)
-}
+module.exports = Menu.buildFromTemplate(template)

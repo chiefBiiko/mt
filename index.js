@@ -10,6 +10,9 @@ var scuttleup = require('scuttleup-blacklist')
 // var filegroup = require('filepaths-group')
 var pojo = require('pojo-ops')
 var path = require('path')
+var lstat = require('fs').lstat
+
+var debug = require('debug')('dumpify')
 
 // TODO: centralized error handling
 
@@ -87,37 +90,76 @@ function loginHandler (e) {
   removeDragDrop = dragDrop(document.body, dropHandler)
 }
 
-function dropHandler (files) {
+function dropHandler (files, pos, fileList, dirs) {
+  debug('files, pos, fileList, dirs', files, pos, fileList, dirs)
   var localhost = local()
-  pojo.forEach(group(files), function (val, key) {
-    if (val.length === 1) { // case file
-      logs.append(JSON.stringify({
-        username: me,
-        filename: path.basename(val[0].path),
-        type: 'file',
-        filepath: val[0].path,
-        size: 419,
-        host: localhost,
-        port: plugport,
-        timestamp: new Date().getTime('UTC')
-      }))
-    } else { // case directory
-      var entries = val.map(function (file) {
-        return file.path
-      })
-      logs.append(JSON.stringify({
-        username: me,
-        filename: path.basename(key),
-        type: 'directory',
-        filepath: key,
-        only: entries,
-        size: 419,
-        host: localhost,
-        port: plugport,
-        timestamp: new Date().getTime('UTC')
-      }))
-    }
+  // var groupedFiles = group(files)
+  // debug('groupedFiles', groupedFiles)
+  files.forEach(function (file) {
+    lstat(file.path, function (err, stats) {
+      if (err) return notify('Error', { body: err.message })
+      if (stats.isDirectory()) {
+        // var entries = val.map(function (file) {
+        //   // return file.path
+        //   return file.name
+        // })
+        // debug('entries', entries)
+        logs.append(JSON.stringify({
+          username: me,
+          filename: file.name,
+          type: 'directory',
+          filepath: file.path,
+          only: null, //entries,
+          size: file.size,
+          host: localhost,
+          port: plugport,
+          timestamp: new Date().getTime('UTC')
+        }))
+      } else if (stats.isFile()) {
+        logs.append(JSON.stringify({
+          username: me,
+          filename: file.name, //path.basename(val[0].path),
+          type: 'file',
+          filepath: file.path, //val[0].path,
+          size: file.size,
+          host: localhost,
+          port: plugport,
+          timestamp: new Date().getTime('UTC')
+        }))
+      }
+    })
   })
+  // pojo.forEach(groupedFiles, function (val, key) {
+  //   if (val.length === 1) { // case file
+  //     logs.append(JSON.stringify({
+  //       username: me,
+  //       filename: path.basename(val[0].path),
+  //       type: 'file',
+  //       filepath: val[0].path,
+  //       size: 419,
+  //       host: localhost,
+  //       port: plugport,
+  //       timestamp: new Date().getTime('UTC')
+  //     }))
+  //   } else { // case directory
+  //     var entries = val.map(function (file) {
+  //       // return file.path
+  //       return file.name
+  //     })
+  //     debug('entries', entries)
+  //     logs.append(JSON.stringify({
+  //       username: me,
+  //       filename: path.basename(key),
+  //       type: 'directory',
+  //       filepath: key,
+  //       only: entries,
+  //       size: 419,
+  //       host: localhost,
+  //       port: plugport,
+  //       timestamp: new Date().getTime('UTC')
+  //     }))
+  //   }
+  // })
   trap.requestSuppliedCount()
 }
 
