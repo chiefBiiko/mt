@@ -206,7 +206,7 @@ var trap = { // all-in-1 factory that whips up dom elements
     })
     this._join.disabled = !valid
     this._join.style.cursor = valid ? 'pointer' : 'not-allowed'
-    this._join.style.color = valid ? '#0099ff' : '#999'
+    this._join.style.color = valid ? '#000' : '#999'
     if (valid && e.keyCode === 13) loginHandler(e)
   },
   getLoginNameInput() {

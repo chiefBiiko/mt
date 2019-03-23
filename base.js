@@ -31,9 +31,6 @@ ipcMain.on('plug-consume', function (e, conf, size, iconid) {
     mw.setProgressBar(-1)
     e.sender.send('plug-consumed', err, localPath, iconid)
   })
-  plug.on('bytes-consumed', function (bytes) {
-    mw.setProgressBar(0.419) // bytes / size
-  })
 })
 
 process.on('exit', function () {
