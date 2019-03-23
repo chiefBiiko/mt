@@ -26,7 +26,7 @@ body {
   padding: 0 5px;
   width: 80vw;
 /*width: 100%;*/
-font-size: 20px;
+  font-size: 20px;
 }
 
 #loginbtn {
@@ -119,7 +119,7 @@ font-size: 20px;
   align-items: center;
   justify-content: space-between;
   box-shadow: 3px 5px #000;
-  overflow-x: visible !important;
+  /* overflow-x: visible !important; */
 }
 
 .msgbox {
@@ -199,13 +199,13 @@ font-size: 20px;
   justify-content: center;
 }
 
-#logintitle {
+/* #logintitle {
   cursor: default;
   font: normal bold 40px 'arial';
   margin-bottom: 30px;
   padding: 5px;
   text-align: center;
-}
+} */
 
 #main {
   /*display: flex;
@@ -223,16 +223,16 @@ font-size: 20px;
   flex-grow: 1;
   margin-bottom: 10px;
   /* overflow-y: auto; */
-  overflow-x: visible;
+  /* overflow-x: visible; */
 /*height: 100px;*/
 
 }
 
-@media only screen and (min-width: 300px) {
+/* @media only screen and (min-width: 300px) {
   #dump, #logintitle { font: normal bold 56px 'arial'; }
 }
 
 @media only screen and (min-width: 370px) {
   #dump, #logintitle { font: normal bold 64px 'arial'; }
   .trashlabel { font-size: 14px; }
-}
+} */

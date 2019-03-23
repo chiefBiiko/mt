@@ -1,6 +1,8 @@
-const { app, Menu, shell } = require('electron')
+var { app, Menu, shell } = require('electron')
 
-const template = [
+var repo = 'https://github.com/chiefbiiko/dumpify'
+
+var template = [
   {
     label: 'View',
     submenu: [
@@ -25,9 +27,18 @@ const template = [
   {
     role: 'help',
     submenu: [
+      // TODO: add following sections to README
       {
-        label: 'Github Repository',
-        click () { shell.openExternal('https://github.com/chiefbiiko/dumpify') }
+        label: 'FAQ',
+        click() {
+          shell.openExternal(repo + '/README.md#FAQ')
+        }
+      },
+      {
+        label: 'Troubleshoot',
+        click() {
+          shell.openExternal(repo + '/README.md#Troubleshoot')
+        }
       }
     ]
   }

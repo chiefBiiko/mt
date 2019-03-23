@@ -293,6 +293,7 @@ var trap = { // all-in-1 factory that whips up dom elements
     this._escaper = document.createElement('img')
     this._escaper.id = 'escapebtn'
     this._escaper.src = './img/account-logout.svg'
+    this._escaper.title = 'escape ' + team
     this._escaper.onclick = escapeHandler
     return this._escaper
   },
@@ -400,6 +401,7 @@ var trap = { // all-in-1 factory that whips up dom elements
     filebox.classList.add(doc.username)
     msgbox.classList.add('msgbox')
     savebtn.src = './img/data-transfer-download.svg'
+    savebtn.title = 'download ' + doc.filename
     savebtn.classList.add('savebtn')
     trashbtn.src = './img/trash.svg'
     trashbtn.classList.add('trashbtn')
