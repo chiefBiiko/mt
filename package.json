@@ -19,7 +19,7 @@
     "discovery-swarm": "^4.4.2",
     "drag-drop": "^2.13.2",
     "filepaths-group": "0.0.1",
-    "fs-plug": "0.2.3",
+    "fs-plug": "0.3.0",
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
