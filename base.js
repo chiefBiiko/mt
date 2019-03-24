@@ -5,7 +5,7 @@ var fsPlug = require('fs-plug')
 
 var menu = require('./menu.js')
 
-var plug = fsPlug({ strict: false })
+var plug = fsPlug({ enforceWhitelist: false })
 var mw
 
 electron.app.on('ready', function () {
@@ -14,9 +14,9 @@ electron.app.on('ready', function () {
   electron.Menu.setApplicationMenu(menu)
 })
 
-ipcMain.on('plug-listen', function plugListenHandler (e, plugport) {
+ipcMain.on('plug-listen', function onlisten (e, plugport) {
   if (plug.listening) {
-    return plug.close(plugListenHandler.bind(null, e, plugport))
+    return plug.close(onlisten.bind(null, e, plugport))
   }
   plug.supplied = plug.consumed = 0
   plug.listen(plugport, local())
@@ -27,8 +27,14 @@ ipcMain.on('supply-count', function (e, _) {
 })
 
 ipcMain.on('plug-consume', function (e, conf, size, iconid) {
+  mw.setProgressBar(2)
+  function onprogress (bytes) {
+    mw.setProgressBar(bytes / size)
+  }
+  plug.on('bytes-consumed', onprogress)
   plug.consume(conf, function (err, localPath) {
     mw.setProgressBar(-1)
+    plug.removeListener('bytes-consumed', onprogress)
     e.sender.send('plug-consumed', err, localPath, iconid)
   })
 })

@@ -110,7 +110,7 @@ function dropHandler (files, pos, fileList, dirs) {
           type: 'directory',
           filepath: file.path,
           only: null, //entries,
-          size: file.size,
+          size: file.size || 419,
           host: localhost,
           port: plugport,
           timestamp: new Date().getTime('UTC')
@@ -121,7 +121,7 @@ function dropHandler (files, pos, fileList, dirs) {
           filename: file.name, //path.basename(val[0].path),
           type: 'file',
           filepath: file.path, //val[0].path,
-          size: file.size,
+          size: file.size || 419,
           host: localhost,
           port: plugport,
           timestamp: new Date().getTime('UTC')
@@ -199,7 +199,7 @@ function saveHandler (e, doc, iconid) {
       localPath: alias,
       only: doc.only || null
     }
-    ipcRenderer.send('plug-consume', conf, doc.size || 419, iconid)
+    ipcRenderer.send('plug-consume', conf, doc.size, iconid)
   })
 }
 

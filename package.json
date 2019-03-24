@@ -1,13 +1,17 @@
 {
   "name": "dumpify",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "drop share files within a local network",
   "main": "base.js",
   "scripts": {
     "start": "./node_modules/.bin/electron ./base.js",
-    "fmt": "./node_modules/.bin/standard --fix",
     "dist": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "chiefbiiko.dumpify",
+    "productName": "dumpify",
+    "copyright": "Copyright © 2017-2019 Noah Anabiik Schwarz"
   },
   "author": "Noah Anabiik Schwarz",
   "license": "MIT",
@@ -15,7 +19,7 @@
     "discovery-swarm": "^4.4.2",
     "drag-drop": "^2.13.2",
     "filepaths-group": "0.0.1",
-    "fs-plug": "0.0.4",
+    "fs-plug": "0.2.3",
     "hash-to-port": "^1.0.0",
     "levelup": "^2.0.1",
     "memdown": "^1.4.1",
@@ -27,13 +31,7 @@
   },
   "devDependencies": {
     "debug": "^3.1.0",
-    "electron": "^1.8.8",
-    "electron-builder": "^20.39.0",
-    "standard": "^10.0.3"
-  },
-  "standard": {
-    "ignore": [
-      "test.js"
-    ]
+    "electron": "^3.1.7",
+    "electron-builder": "^20.39.0"
   }
 }
